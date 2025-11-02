@@ -38,10 +38,50 @@ GitAgent solves this by mapping the agent lifecycle to the Git workflow, making 
 - `git agent logs` - Live agent output and decisions
 - `git agent compare main aggressive` - Side-by-side branch comparison
 
+## Somnia Blockchain Integration ⛓️
+
+**This is NOT just a webhook system. Every agent is a deployed smart contract on Somnia:**
+
+1. **On-Chain Agent Registry** (`AgentFactory.sol`)
+   - Deploys unique `Agent.sol` contracts for each repo/branch on Somnia testnet
+   - Creates immutable, on-chain identity for each AI agent
+   - Tracks all agents in a blockchain-backed registry
+
+2. **Agent Smart Contracts** (`Agent.sol`)
+   - Each agent is a deployed contract on Somnia with its own address
+   - Agents can receive and hold SOMI tokens (ownable vault)
+   - Can execute arbitrary calls to DEXs, DeFi protocols on Somnia
+   - Immutable proof of deployment on-chain
+
+3. **Somnia Testnet Deployment**
+   - All contracts deployed to Somnia testnet (`chainId: 50312`)
+   - Uses Somnia RPC (`https://dream-rpc.somnia.network`)
+   - Agents interact with Somnia's DeFi ecosystem
+   - **Deployed Contract**: [Add your AgentFactory address after deployment]
+   - **Network**: Somnia Testnet (Chain ID: 50312)
+
+4. **Git → Blockchain → AI Pipeline**
+   ```
+   git push → GitHub webhook → Backend → Deploy Agent.sol on Somnia 
+   → Clone code → Run AI agent → Agent can execute trades on Somnia DEXs
+   ```
+
 ## Architecture Diagram
 
 ```
-[Architecture Diagram: User -> GitHub -> Webhook -> GitAgent Backend -> Somnia]
+Developer → git push
+    ↓
+GitHub Webhook → GitAgent Backend
+    ↓
+Deploy Agent.sol contract on Somnia Testnet
+    ↓
+Agent gets on-chain address (0x...)
+    ↓
+Clone code & inject secrets
+    ↓
+Run AI agent (PM2)
+    ↓
+Agent can execute trades/DeFi on Somnia via contract.execute()
 ```
 
 ## Live Demo
@@ -98,14 +138,35 @@ git agent compare main aggressive
 
 **Two AI agents running in parallel from the same repository!**
 
-## Why This Matters
+## Why This Matters for Somnia
 
-- **Developer Experience**: Deploy AI agents like you deploy web apps
-- **A/B Testing**: Test different strategies safely and easily
-- **Collaboration**: Team members can work on different agent versions
-- **Monitoring**: Built-in stats and logging for all agents
-- **Security**: Encrypted secret management
-- **Scalability**: Deploy unlimited agents with zero configuration
+### 🎯 **Infrastructure Track Fit**
+This is infrastructure that makes deploying Somnia agents **10x easier**. Before GitAgent:
+- ❌ Manual contract deployment for each agent
+- ❌ No way to track which agents are deployed
+- ❌ Difficult to manage multiple agent versions
+- ❌ No unified deployment workflow
+
+After GitAgent:
+- ✅ `git push` auto-deploys agents to Somnia
+- ✅ On-chain registry tracks all agents
+- ✅ Each branch = separate agent contract
+- ✅ Production-ready deployment pipeline
+
+### 🔗 **Somnia-Specific Benefits**
+- **On-Chain Identity**: Every agent has a Somnia contract address
+- **Token Management**: Agents can hold/receive SOMI tokens
+- **DeFi Integration**: Agents can interact with Somnia DEXs/protocols
+- **Blockchain-Backed**: Agent registry is immutable on Somnia
+- **Recovery**: Can recover agent addresses even if backend is lost
+
+### 💡 **Real-World Use Cases**
+1. **DeFi Trading Agents**: Deploy trading bots that execute on Somnia DEXs
+2. **A/B Testing Strategies**: Test different AI strategies as separate contracts
+3. **Team Collaboration**: Multiple devs can deploy agents from same repo
+4. **Production Deployment**: Git-based CI/CD for blockchain agents
+
+This bridges the gap between **Git workflows** (what devs know) and **on-chain agent deployment** (Somnia's future).
 
 ## Future Roadmap
 

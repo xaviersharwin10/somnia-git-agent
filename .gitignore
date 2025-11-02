@@ -57,3 +57,4 @@ backend/db.sqlite-journal
 
 package-lock.json
 
+agent-template/

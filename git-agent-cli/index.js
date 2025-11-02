@@ -42,12 +42,20 @@ function getCurrentBranch() {
   return branch;
 }
 
+// Calculate branch_hash (same as backend)
+const { ethers } = require('ethers');
+
+function calculateBranchHash(repo_url, branch_name) {
+  return ethers.id(repo_url + "/" + branch_name);
+}
+
 // Helper function to fetch stats for a specific branch
 async function getStats(repo_url, branch_name) {
   try {
-    const url = `${API_BASE_URL}/api/stats/${encodeURIComponent(repo_url)}/${encodeURIComponent(branch_name)}`;
+    const branch_hash = calculateBranchHash(repo_url, branch_name);
+    const url = `${API_BASE_URL}/api/stats/${branch_hash}`;
     const { data } = await axios.get(url);
-    return data;
+    return { ...data, branch_name, repo_url };
   } catch (err) {
     console.error(chalk.red(`Error fetching stats for ${branch_name}: ${err.response?.data?.error || err.message}`));
     return null;
@@ -142,19 +150,41 @@ program
  */
 program
   .command('stats')
-  .description('Get stats for the agent on the current branch')
+  .description('Get performance stats for the agent on the current branch')
   .action(async () => {
     const config = getConfig();
     const branch_name = getCurrentBranch();
 
-    console.log(chalk.cyan(`Fetching stats for ${branch_name}...`));
-    const stats = await getStats(config.repo_url, branch_name);
+    console.log(chalk.cyan(`📊 Fetching stats for ${branch_name}...`));
+    const result = await getStats(config.repo_url, branch_name);
 
-    if (stats) {
-      console.log(chalk.bold(`--- Agent Stats: ${stats.branch} ---`));
-      console.log(chalk.green(`  Status:  ${stats.status.toUpperCase()}`));
-      console.log(`  Balance: ${chalk.yellow(stats.balance)}`);
-      console.log(`  Address: ${stats.agent_address}`);
+    if (result && result.stats) {
+      const s = result.stats;
+      console.log(chalk.bold(`\n--- Agent Performance: ${branch_name} ---`));
+      console.log(chalk.green(`  Total Decisions:  ${s.total_decisions || 0}`));
+      console.log(chalk.cyan(`  BUY Signals:     ${s.buy_count || 0}`));
+      console.log(chalk.yellow(`  HOLD Signals:    ${s.hold_count || 0}`));
+      console.log(chalk.magenta(`  Trades Executed: ${s.trades_executed || 0}`));
+      
+      if (s.avg_price) {
+        console.log(`\n  Price Statistics:`);
+        console.log(`    Average: $${parseFloat(s.avg_price).toFixed(4)}`);
+        console.log(`    Min:     $${parseFloat(s.min_price).toFixed(4)}`);
+        console.log(`    Max:     $${parseFloat(s.max_price).toFixed(4)}`);
+      }
+      
+      if (s.first_decision && s.last_decision) {
+        console.log(`\n  Activity:`);
+        console.log(`    First Decision: ${s.first_decision}`);
+        console.log(`    Last Decision:  ${s.last_decision}`);
+      }
+      
+      if (s.trades_executed > 0) {
+        const successRate = ((s.trades_executed / s.total_decisions) * 100).toFixed(1);
+        console.log(chalk.green(`\n  Success Rate: ${successRate}%`));
+      }
+    } else {
+      console.log(chalk.yellow('No metrics available yet. Make some decisions first!'));
     }
   });
 
@@ -187,7 +217,7 @@ program
 
 /**
  * 5. COMPARE
- * Compares two branches
+ * Compares two branches side-by-side
  */
 program
   .command('compare <branch1> <branch2>')
@@ -195,24 +225,67 @@ program
   .action(async (branch1, branch2) => {
     const config = getConfig();
 
-    console.log(chalk.cyan(`Comparing ${branch1} vs ${branch2}...`));
+    console.log(chalk.cyan(`📊 Comparing ${chalk.bold(branch1)} vs ${chalk.bold(branch2)}...`));
 
-    const [stats1, stats2] = await Promise.all([
+    const [result1, result2] = await Promise.all([
       getStats(config.repo_url, branch1),
       getStats(config.repo_url, branch2)
     ]);
 
-    if (!stats1 || !stats2) {
+    if (!result1 || !result2 || !result1.stats || !result2.stats) {
       console.error(chalk.red('Could not fetch stats for comparison.'));
+      if (!result1) console.log(chalk.yellow(`  ${branch1}: No metrics available`));
+      if (!result2) console.log(chalk.yellow(`  ${branch2}: No metrics available`));
       return;
     }
 
-    console.log(chalk.bold('--- Agent Comparison ---'));
-    console.log(`| Metric        | ${chalk.bold(branch1.padEnd(20))} | ${chalk.bold(branch2.padEnd(20))} |`);
-    console.log('|---------------|------------------------|------------------------|');
-    console.log(`| Status        | ${stats1.status.padEnd(20)} | ${stats2.status.padEnd(20)} |`);
-    console.log(`| Balance (SOMI) | ${chalk.yellow(stats1.balance.padEnd(20))} | ${chalk.yellow(stats2.balance.padEnd(20))} |`);
-    console.log(`| Address       | ${stats1.agent_address.substring(0, 20)}... | ${stats2.agent_address.substring(0, 20)}... |`);
+    const s1 = result1.stats;
+    const s2 = result2.stats;
+
+    console.log(chalk.bold('\n--- Side-by-Side Agent Comparison ---\n'));
+    
+    // Create comparison table
+    const metrics = [
+      { label: 'Total Decisions', v1: s1.total_decisions || 0, v2: s2.total_decisions || 0, format: (v) => v.toString() },
+      { label: 'BUY Signals', v1: s1.buy_count || 0, v2: s2.buy_count || 0, format: (v) => chalk.cyan(v.toString()) },
+      { label: 'HOLD Signals', v1: s1.hold_count || 0, v2: s2.hold_count || 0, format: (v) => chalk.yellow(v.toString()) },
+      { label: 'Trades Executed', v1: s1.trades_executed || 0, v2: s2.trades_executed || 0, format: (v) => chalk.magenta(v.toString()) },
+      { label: 'Avg Price', v1: s1.avg_price || 0, v2: s2.avg_price || 0, format: (v) => `$${parseFloat(v).toFixed(4)}` },
+      { label: 'Success Rate', 
+        v1: s1.total_decisions ? ((s1.trades_executed / s1.total_decisions) * 100).toFixed(1) : '0.0', 
+        v2: s2.total_decisions ? ((s2.trades_executed / s2.total_decisions) * 100).toFixed(1) : '0.0',
+        format: (v) => chalk.green(`${v}%`)
+      },
+    ];
+
+    console.log(`| ${'Metric'.padEnd(18)} | ${chalk.bold(branch1.padEnd(25))} | ${chalk.bold(branch2.padEnd(25))} |`);
+    console.log('|' + '-'.repeat(20) + '|' + '-'.repeat(27) + '|' + '-'.repeat(27) + '|');
+    
+    metrics.forEach(m => {
+      const v1Str = m.format(m.v1);
+      const v2Str = m.format(m.v2);
+      console.log(`| ${m.label.padEnd(18)} | ${v1Str.padEnd(25)} | ${v2Str.padEnd(25)} |`);
+    });
+
+    // Determine winner
+    console.log('\n' + chalk.bold('🏆 Winner Analysis:'));
+    if ((s1.trades_executed || 0) > (s2.trades_executed || 0)) {
+      console.log(chalk.green(`  ${branch1} has executed more trades`));
+    } else if ((s2.trades_executed || 0) > (s1.trades_executed || 0)) {
+      console.log(chalk.green(`  ${branch2} has executed more trades`));
+    } else {
+      console.log(chalk.yellow(`  Both branches have similar trade execution`));
+    }
+
+    if (s1.total_decisions && s2.total_decisions) {
+      const rate1 = (s1.trades_executed / s1.total_decisions) * 100;
+      const rate2 = (s2.trades_executed / s2.total_decisions) * 100;
+      if (rate1 > rate2) {
+        console.log(chalk.green(`  ${branch1} has better success rate (${rate1.toFixed(1)}% vs ${rate2.toFixed(1)}%)`));
+      } else if (rate2 > rate1) {
+        console.log(chalk.green(`  ${branch2} has better success rate (${rate2.toFixed(1)}% vs ${rate1.toFixed(1)}%)`));
+      }
+    }
   });
 
 // --- Parse and Run ---

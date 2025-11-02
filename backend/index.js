@@ -148,6 +148,10 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
   const env = await new Promise((resolve, reject) => {
     const secrets = {
       AGENT_CONTRACT_ADDRESS: agent.agent_address,
+      REPO_URL: agent.repo_url || '',
+      BRANCH_NAME: agent.branch_name || 'main',
+      BACKEND_URL: process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 3005}`,
+      SOMNIA_RPC_URL: process.env.SOMNIA_RPC_URL || 'https://dream-rpc.somnia.network',
       // We can add other default envs here
     };
     db.all('SELECT key, encrypted_value FROM secrets WHERE agent_id = ?', [agent.id], (err, rows) => {
@@ -968,6 +972,108 @@ app.get('/dashboard', (req, res) => {
     res.sendFile(dashboardPath);
   } else {
     res.status(404).send('Dashboard not found');
+  }
+});
+
+// Metrics endpoint - Agents can post their decisions/transactions here
+app.post('/api/metrics', (req, res) => {
+  const { repo_url, branch_name, decision, price, trade_executed, trade_tx_hash, trade_amount } = req.body;
+
+  if (!repo_url || !branch_name || !decision) {
+    return res.status(400).json({ error: 'Missing required fields: repo_url, branch_name, decision' });
+  }
+
+  const branch_hash = ethers.id(repo_url + "/" + branch_name);
+
+  try {
+    // Find the agent in the DB
+    db.get('SELECT id FROM agents WHERE branch_hash = ?', [branch_hash], (err, agent) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (!agent) {
+        return res.status(404).json({ error: 'Agent not found' });
+      }
+
+      // Insert metric
+      db.run(
+        'INSERT INTO metrics (agent_id, decision, price, trade_executed, trade_tx_hash, trade_amount) VALUES (?, ?, ?, ?, ?, ?)',
+        [agent.id, decision, price || null, trade_executed ? 1 : 0, trade_tx_hash || null, trade_amount || null],
+        function (err) {
+          if (err) {
+            console.error('Error inserting metric:', err);
+            return res.status(500).json({ error: 'Failed to save metric' });
+          }
+          res.status(201).json({ success: true, metric_id: this.lastID });
+        }
+      );
+    });
+  } catch (error) {
+    console.error('Error saving metric:', error);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// Get metrics for an agent
+app.get('/api/metrics/:branch_hash', (req, res) => {
+  const { branch_hash } = req.params;
+
+  try {
+    db.get('SELECT id FROM agents WHERE branch_hash = ?', [branch_hash], (err, agent) => {
+      if (err || !agent) {
+        return res.status(404).json({ error: 'Agent not found' });
+      }
+
+      db.all(
+        'SELECT * FROM metrics WHERE agent_id = ? ORDER BY timestamp DESC LIMIT 100',
+        [agent.id],
+        (err, metrics) => {
+          if (err) {
+            return res.status(500).json({ error: 'Database error' });
+          }
+          res.json({ metrics });
+        }
+      );
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get stats for an agent (aggregated metrics)
+app.get('/api/stats/:branch_hash', (req, res) => {
+  const { branch_hash } = req.params;
+
+  try {
+    db.get('SELECT id FROM agents WHERE branch_hash = ?', [branch_hash], (err, agent) => {
+      if (err || !agent) {
+        return res.status(404).json({ error: 'Agent not found' });
+      }
+
+      // Get aggregated stats
+      db.get(`
+        SELECT 
+          COUNT(*) as total_decisions,
+          SUM(CASE WHEN decision LIKE '%BUY%' THEN 1 ELSE 0 END) as buy_count,
+          SUM(CASE WHEN decision LIKE '%HOLD%' THEN 1 ELSE 0 END) as hold_count,
+          SUM(CASE WHEN trade_executed = 1 THEN 1 ELSE 0 END) as trades_executed,
+          AVG(price) as avg_price,
+          MIN(price) as min_price,
+          MAX(price) as max_price,
+          MIN(timestamp) as first_decision,
+          MAX(timestamp) as last_decision
+        FROM metrics 
+        WHERE agent_id = ?
+      `, [agent.id], (err, stats) => {
+        if (err) {
+          return res.status(500).json({ error: 'Database error' });
+        }
+        res.json({ stats: stats || {} });
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

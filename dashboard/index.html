@@ -233,21 +233,25 @@
 
             <!-- Price & Decision -->
             <div class="card">
-                <h2>💰 SOMI Price & Decisions</h2>
+                <h2>💰 Agent Performance Metrics</h2>
                 <div class="price-display" id="currentPrice">$0.0000</div>
                 <div class="stats-grid">
                     <div class="stat-box">
-                        <div class="stat-value" id="lastPrice">-</div>
-                        <div class="stat-label">Last Price</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="decisionCount">0</div>
-                        <div class="stat-label">Decisions</div>
+                        <div class="stat-value" id="totalDecisions">0</div>
+                        <div class="stat-label">Total Decisions</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-value" id="buyCount">0</div>
                         <div class="stat-label">BUY Signals</div>
                     </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="tradesExecuted">0</div>
+                        <div class="stat-label">Trades Executed</div>
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Success Rate</div>
+                    <div class="stat-value" id="successRate">0%</div>
                 </div>
                 <div class="decision HOLD" id="latestDecision">Waiting for decision...</div>
             </div>
@@ -260,6 +264,32 @@
                 </div>
                 <button class="refresh-btn" onclick="loadLogs()">🔄 Refresh Logs</button>
             </div>
+        </div>
+
+        <!-- Multi-Agent Comparison Section -->
+        <div class="card" style="margin-top: 20px; grid-column: 1 / -1;">
+            <h2>📊 Multi-Agent Comparison</h2>
+            <div id="comparisonContainer" style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                    <thead>
+                        <tr style="background: #f8f9fa;">
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Branch</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Decisions</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">BUY</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">HOLD</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Trades</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Success Rate</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Avg Price</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comparisonTable">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 20px; color: #999;">Loading comparison data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <button class="refresh-btn" onclick="loadComparison()" style="margin-top: 15px;">🔄 Refresh Comparison</button>
         </div>
     </div>
 
@@ -308,11 +338,14 @@
         function selectAgent(branchHash) {
             selectedAgentId = branchHash;
             loadLogs();
+            loadStats(); // Load stats when agent is selected
             // Update agent list visual selection
             document.querySelectorAll('.agent-item').forEach(item => {
                 item.style.background = '';
             });
-            event.currentTarget.style.background = '#e0e7ff';
+            if (event && event.currentTarget) {
+                event.currentTarget.style.background = '#e0e7ff';
+            }
         }
 
         // Load logs for selected agent
@@ -353,6 +386,82 @@
             }
         }
 
+        // Load stats for selected agent
+        async function loadStats() {
+            if (!selectedAgentId) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/stats/${selectedAgentId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.stats) {
+                        const s = data.stats;
+                        document.getElementById('totalDecisions').textContent = s.total_decisions || 0;
+                        document.getElementById('buyCount').textContent = s.buy_count || 0;
+                        document.getElementById('tradesExecuted').textContent = s.trades_executed || 0;
+                        
+                        if (s.avg_price) {
+                            document.getElementById('currentPrice').textContent = `$${parseFloat(s.avg_price).toFixed(4)}`;
+                        }
+                        
+                        if (s.total_decisions && s.trades_executed) {
+                            const successRate = ((s.trades_executed / s.total_decisions) * 100).toFixed(1);
+                            document.getElementById('successRate').textContent = `${successRate}%`;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Load comparison data for all agents
+        async function loadComparison() {
+            try {
+                const agentsResponse = await fetch(`${API_BASE}/api/agents`);
+                const agentsData = await agentsResponse.json();
+                
+                if (!agentsData.agents || agentsData.agents.length === 0) {
+                    document.getElementById('comparisonTable').innerHTML = 
+                        '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #999;">No agents deployed</td></tr>';
+                    return;
+                }
+
+                // Fetch stats for all agents
+                const statsPromises = agentsData.agents.map(agent => 
+                    fetch(`${API_BASE}/api/stats/${agent.branch_hash}`)
+                        .then(r => r.ok ? r.json() : null)
+                        .then(data => ({ agent, stats: data?.stats || {} }))
+                        .catch(() => ({ agent, stats: {} }))
+                );
+
+                const results = await Promise.all(statsPromises);
+                
+                const tableBody = document.getElementById('comparisonTable');
+                tableBody.innerHTML = results.map(({ agent, stats }) => {
+                    const successRate = stats.total_decisions ? 
+                        ((stats.trades_executed || 0) / stats.total_decisions * 100).toFixed(1) : '0.0';
+                    
+                    return `
+                        <tr onclick="selectAgent('${agent.branch_hash}')" style="cursor: pointer; border-bottom: 1px solid #eee;">
+                            <td style="padding: 12px;">
+                                <strong>${agent.branch_name}</strong>
+                                <span class="status ${agent.status}" style="margin-left: 8px;">${agent.status}</span>
+                            </td>
+                            <td style="padding: 12px; text-align: center;">${stats.total_decisions || 0}</td>
+                            <td style="padding: 12px; text-align: center; color: #10b981;">${stats.buy_count || 0}</td>
+                            <td style="padding: 12px; text-align: center; color: #f59e0b;">${stats.hold_count || 0}</td>
+                            <td style="padding: 12px; text-align: center; color: #8b5cf6;">${stats.trades_executed || 0}</td>
+                            <td style="padding: 12px; text-align: center; color: #10b981; font-weight: bold;">${successRate}%</td>
+                            <td style="padding: 12px; text-align: center;">${stats.avg_price ? '$' + parseFloat(stats.avg_price).toFixed(4) : '-'}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading comparison:', error);
+            }
+        }
+
         // Parse logs to extract price and decisions
         function parseLogsForData(logArray) {
             if (!Array.isArray(logArray)) return;
@@ -366,7 +475,6 @@
                 if (priceMatch) {
                     const price = parseFloat(priceMatch[1]);
                     document.getElementById('currentPrice').textContent = `$${price.toFixed(4)}`;
-                    document.getElementById('lastPrice').textContent = `$${price.toFixed(4)}`;
                     break; // Get latest price
                 }
             }
@@ -387,12 +495,20 @@
         }
 
         // Auto-refresh
-        agentInterval = setInterval(loadAgents, 10000); // Every 10 seconds
-        logInterval = setInterval(loadLogs, 5000); // Every 5 seconds
+        agentInterval = setInterval(() => {
+            loadAgents();
+            loadComparison(); // Refresh comparison too
+        }, 10000); // Every 10 seconds
+        logInterval = setInterval(() => {
+            loadLogs();
+            loadStats(); // Refresh stats too
+        }, 5000); // Every 5 seconds
 
         // Initial load
         loadAgents();
+        loadComparison();
     </script>
 </body>
 </html>
+
 

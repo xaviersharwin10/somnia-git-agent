@@ -74,6 +74,40 @@ function initializeDatabase() {
           return;
         }
         console.log('✅ Secrets index created/verified');
+      });
+
+      // Create metrics table for tracking agent performance
+      db.run(`
+        CREATE TABLE IF NOT EXISTS metrics (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          agent_id INTEGER NOT NULL,
+          decision TEXT NOT NULL,
+          price REAL,
+          timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+          trade_executed BOOLEAN DEFAULT 0,
+          trade_tx_hash TEXT,
+          trade_amount REAL,
+          FOREIGN KEY(agent_id) REFERENCES agents(id) ON DELETE CASCADE
+        )
+      `, (err) => {
+        if (err) {
+          console.error('Error creating metrics table:', err);
+          reject(err);
+          return;
+        }
+        console.log('✅ Metrics table created/verified');
+      });
+
+      // Create index on agent_id for metrics table
+      db.run(`
+        CREATE INDEX IF NOT EXISTS idx_metrics_agent_id ON metrics(agent_id)
+      `, (err) => {
+        if (err) {
+          console.error('Error creating metrics index:', err);
+          reject(err);
+          return;
+        }
+        console.log('✅ Metrics index created/verified');
         resolve();
       });
     });
