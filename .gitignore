@@ -55,5 +55,5 @@ git-agent-cli/test-repo/
 backend/db.sqlite
 backend/db.sqlite-journal
 
-
+package-lock.json
 
