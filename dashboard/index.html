@@ -225,6 +225,12 @@
             <!-- Agents List -->
             <div class="card">
                 <h2>📋 Active Agents</h2>
+                <div style="margin-bottom: 15px;">
+                    <label for="repoFilter" style="display: block; margin-bottom: 8px; font-weight: 600; color: #667eea;">Filter by Repository:</label>
+                    <select id="repoFilter" onchange="filterByRepo()" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 0.95em; background: white; cursor: pointer;">
+                        <option value="">All Repositories</option>
+                    </select>
+                </div>
                 <div class="agent-list" id="agentList">
                     <div style="text-align: center; padding: 20px; color: #999;">Loading agents...</div>
                 </div>
@@ -273,7 +279,7 @@
                 <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
                     <thead>
                         <tr style="background: #f8f9fa;">
-                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Branch</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Branch / Repository</th>
                             <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Decisions</th>
                             <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">BUY</th>
                             <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">HOLD</th>
@@ -299,34 +305,107 @@
         let selectedAgentId = null;
         let logInterval = null;
         let agentInterval = null;
+        let allAgents = []; // Store all agents
+        let selectedRepoUrl = ''; // Currently selected repository
 
-        // Load agents list
-        async function loadAgents() {
+        // Load repositories dropdown
+        async function loadRepositories() {
             try {
                 const response = await fetch(`${API_BASE}/api/agents`);
                 const data = await response.json();
                 
-                const agentList = document.getElementById('agentList');
-                
                 if (!data.agents || data.agents.length === 0) {
-                    agentList.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">No agents deployed yet</div>';
                     return;
                 }
+                
+                // Get unique repositories
+                const repos = [...new Set(data.agents.map(agent => agent.repo_url))];
+                const repoFilter = document.getElementById('repoFilter');
+                
+                // Clear existing options except "All Repositories"
+                repoFilter.innerHTML = '<option value="">All Repositories</option>';
+                
+                // Add repository options
+                repos.forEach(repo => {
+                    const option = document.createElement('option');
+                    option.value = repo;
+                    // Show a shortened version for display
+                    const repoName = repo.replace('https://github.com/', '').replace('.git', '');
+                    option.textContent = repoName;
+                    repoFilter.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading repositories:', error);
+            }
+        }
 
-                agentList.innerHTML = data.agents.map(agent => `
+        // Filter agents by repository
+        function filterByRepo() {
+            const repoFilter = document.getElementById('repoFilter');
+            selectedRepoUrl = repoFilter.value;
+            displayAgents(allAgents);
+            loadComparison(); // Also update comparison table
+        }
+
+        // Display agents (filtered if needed)
+        function displayAgents(agents) {
+            const agentList = document.getElementById('agentList');
+            
+            // Filter by repository if one is selected
+            let filteredAgents = agents;
+            if (selectedRepoUrl) {
+                filteredAgents = agents.filter(agent => agent.repo_url === selectedRepoUrl);
+            }
+            
+            if (filteredAgents.length === 0) {
+                agentList.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">No agents found for selected repository</div>';
+                return;
+            }
+            
+            agentList.innerHTML = filteredAgents.map(agent => {
+                // Show repository info
+                const repoName = agent.repo_url.replace('https://github.com/', '').replace('.git', '');
+                return `
                     <div class="agent-item" onclick="selectAgent('${agent.branch_hash}')">
-                        <strong>${agent.branch_name}</strong>
-                        <span class="status ${agent.status}">${agent.status}</span>
-                        <div style="font-size: 0.85em; color: #666; margin-top: 5px;">
-                            ${agent.agent_address.substring(0, 10)}...${agent.agent_address.substring(38)}
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${agent.branch_name}</strong>
+                                <span class="status ${agent.status}">${agent.status}</span>
+                                ${!selectedRepoUrl ? `<div style="font-size: 0.75em; color: #999; margin-top: 4px;">${repoName}</div>` : ''}
+                            </div>
+                            <div style="font-size: 0.85em; color: #666; font-family: monospace;">
+                                ${agent.agent_address ? agent.agent_address.substring(0, 10) + '...' : 'N/A'}
+                            </div>
                         </div>
                     </div>
-                `).join('');
+                `;
+            }).join('');
+            
+            // Auto-select first agent if none selected
+            if (filteredAgents.length > 0 && !selectedAgentId) {
+                selectAgent(filteredAgents[0].branch_hash);
+            }
+        }
 
-                // Auto-select first agent
-                if (data.agents.length > 0 && !selectedAgentId) {
-                    selectAgent(data.agents[0].branch_hash);
+        // Load agents list
+        async function loadAgents() {
+            try {
+                // Build URL with optional repo filter
+                let url = `${API_BASE}/api/agents`;
+                if (selectedRepoUrl) {
+                    url += `?repo_url=${encodeURIComponent(selectedRepoUrl)}`;
                 }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                allAgents = data.agents || [];
+                
+                // Update repository dropdown if needed
+                await loadRepositories();
+                
+                // Display filtered agents
+                displayAgents(allAgents);
             } catch (error) {
                 console.error('Error loading agents:', error);
                 document.getElementById('agentList').innerHTML = 
@@ -415,15 +494,21 @@
             }
         }
 
-        // Load comparison data for all agents
+        // Load comparison data for all agents (filtered by repo if selected)
         async function loadComparison() {
             try {
-                const agentsResponse = await fetch(`${API_BASE}/api/agents`);
+                // Build URL with optional repo filter
+                let url = `${API_BASE}/api/agents`;
+                if (selectedRepoUrl) {
+                    url += `?repo_url=${encodeURIComponent(selectedRepoUrl)}`;
+                }
+                
+                const agentsResponse = await fetch(url);
                 const agentsData = await agentsResponse.json();
                 
                 if (!agentsData.agents || agentsData.agents.length === 0) {
                     document.getElementById('comparisonTable').innerHTML = 
-                        '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #999;">No agents deployed</td></tr>';
+                        '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #999;">No agents found for selected repository</td></tr>';
                     return;
                 }
 
@@ -442,10 +527,14 @@
                     const successRate = stats.total_decisions ? 
                         ((stats.trades_executed || 0) / stats.total_decisions * 100).toFixed(1) : '0.0';
                     
+                    // Show repository name if not filtering
+                    const repoName = agent.repo_url.replace('https://github.com/', '').replace('.git', '');
+                    
                     return `
                         <tr onclick="selectAgent('${agent.branch_hash}')" style="cursor: pointer; border-bottom: 1px solid #eee;">
                             <td style="padding: 12px;">
                                 <strong>${agent.branch_name}</strong>
+                                ${!selectedRepoUrl ? `<div style="font-size: 0.75em; color: #999; margin-top: 4px;">${repoName}</div>` : ''}
                                 <span class="status ${agent.status}" style="margin-left: 8px;">${agent.status}</span>
                             </td>
                             <td style="padding: 12px; text-align: center;">${stats.total_decisions || 0}</td>
@@ -505,6 +594,7 @@
         }, 5000); // Every 5 seconds
 
         // Initial load
+        loadRepositories();
         loadAgents();
         loadComparison();
     </script>

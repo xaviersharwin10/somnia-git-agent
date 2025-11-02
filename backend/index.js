@@ -863,7 +863,19 @@ app.post('/api/agents/manual-trigger', async (req, res) => {
 
 // Agent management endpoints
 app.get('/api/agents', (req, res) => {
-  db.all('SELECT id, repo_url, branch_name, branch_hash, agent_address, status, pid, created_at FROM agents ORDER BY created_at DESC', (err, rows) => {
+  const repo_url = req.query.repo_url; // Optional filter by repository
+  
+  let query = 'SELECT id, repo_url, branch_name, branch_hash, agent_address, status, pid, created_at FROM agents';
+  const params = [];
+  
+  if (repo_url) {
+    query += ' WHERE repo_url = ?';
+    params.push(repo_url);
+  }
+  
+  query += ' ORDER BY created_at DESC';
+  
+  db.all(query, params, (err, rows) => {
     if (err) {
       console.error('Error fetching agents:', err);
       return res.status(500).json({ error: 'Database error' });
