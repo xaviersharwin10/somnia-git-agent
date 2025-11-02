@@ -101,11 +101,12 @@ Agent can execute trades/DeFi on Somnia via contract.execute()
 
 ## Getting Started
 
-1. **Create a new agent:**
+1. **Fork/Clone the Agent Template:**
    ```bash
-   npx create-somnia-agent my-ai-bot
+   git clone https://github.com/xaviersharwin10/gitAgent.git my-ai-bot
    cd my-ai-bot
    ```
+   > The agent template is a **separate repository** that users fork/clone. This is how real-world usage works - each user has their own agent repository.
 
 2. **Set up GitAgent:**
    ```bash
@@ -114,12 +115,18 @@ Agent can execute trades/DeFi on Somnia via contract.execute()
    git agent secrets set GROQ_API_KEY=your-key
    ```
 
-3. **Deploy:**
+3. **Configure GitHub Webhook:**
+   - Go to your repository settings → Webhooks
+   - Add webhook pointing to your GitAgent backend URL
+   - Select "Just the push event"
+
+4. **Deploy:**
    ```bash
    git push origin main
    ```
+   > This triggers the webhook → Backend deploys `Agent.sol` on Somnia → Clones and runs your agent
 
-4. **Monitor:**
+5. **Monitor:**
    ```bash
    git agent stats
    git agent logs
