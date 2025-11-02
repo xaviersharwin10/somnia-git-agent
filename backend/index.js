@@ -589,10 +589,11 @@ app.post('/webhook/github/push', async (req, res) => {
 
         try {
           const { agentFactoryContract: factoryContract } = getEthersSetup();
-          agentAddress = await factoryContract.agents(branch_hash);
+          const onChainAddress = await factoryContract.agents(branch_hash);
           
           // Check if agent exists on-chain
-          if (agentAddress && agentAddress !== ethers.ZeroAddress && agentAddress !== "0x0000000000000000000000000000000000000000") {
+          if (onChainAddress && onChainAddress !== ethers.ZeroAddress && onChainAddress !== "0x0000000000000000000000000000000000000000") {
+            agentAddress = onChainAddress; // Set it here
             console.log(`Agent found on-chain at: ${agentAddress}`);
             
             // If agent exists in DB, proceed with update
@@ -616,12 +617,12 @@ app.post('/webhook/github/push', async (req, res) => {
             } else {
               // Agent exists on-chain but not in DB - recover from blockchain
               console.log(`Agent exists on-chain but not in database. Recovering...`);
-              // We'll create the DB entry below
+              // We'll use the agentAddress we just found below
             }
           }
         } catch (checkError) {
           console.warn('Could not check contract state:', checkError.message);
-          // Continue with DB check logic
+          // Continue with DB check logic - agentAddress remains null
         }
 
         if (agent) {
@@ -643,28 +644,40 @@ app.post('/webhook/github/push', async (req, res) => {
             // 2a. Get ethers setup (lazy initialization)
             const { agentFactoryContract: factoryContract } = getEthersSetup();
             
-            // 2b. Try to deploy contract, but handle "already registered" gracefully
-            if (!agentAddress) {
-              console.log(`Registering agent with branch_hash: ${branch_hash}...`);
-              try {
-                const tx = await factoryContract.registerAgent(branch_hash);
-                console.log(`Transaction sent: ${tx.hash}, waiting for confirmation...`);
-                const receipt = await tx.wait();
-                console.log(`Transaction confirmed in block ${receipt.blockNumber}`);
-                
-                // Get agent address from contract's mapping
-                agentAddress = await factoryContract.agents(branch_hash);
-                isNewDeployment = true;
-              } catch (deployError) {
-                // Check if error is "Agent already registered"
-                if (deployError.reason === 'Agent already registered' || 
-                    deployError.message?.includes('Agent already registered')) {
-                  console.log(`Agent already registered on-chain. Fetching address...`);
+            // 2b. If we don't have an address yet, try to get it from chain first, then register if needed
+            if (!agentAddress || agentAddress === ethers.ZeroAddress || agentAddress === "0x0000000000000000000000000000000000000000") {
+              // Check if agent already exists on-chain (double-check)
+              agentAddress = await factoryContract.agents(branch_hash);
+              
+              if (!agentAddress || agentAddress === ethers.ZeroAddress || agentAddress === "0x0000000000000000000000000000000000000000") {
+                // Agent doesn't exist, register it
+                console.log(`Registering agent with branch_hash: ${branch_hash}...`);
+                try {
+                  const tx = await factoryContract.registerAgent(branch_hash);
+                  console.log(`Transaction sent: ${tx.hash}, waiting for confirmation...`);
+                  const receipt = await tx.wait();
+                  console.log(`Transaction confirmed in block ${receipt.blockNumber}`);
+                  
+                  // Wait a bit for state to propagate, then get agent address
+                  await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
                   agentAddress = await factoryContract.agents(branch_hash);
-                  isNewDeployment = false;
-                } else {
-                  throw deployError; // Re-throw if it's a different error
+                  isNewDeployment = true;
+                } catch (deployError) {
+                  // Check if error is "Agent already registered"
+                  if (deployError.reason === 'Agent already registered' || 
+                      deployError.message?.includes('Agent already registered')) {
+                    console.log(`Agent already registered on-chain. Fetching address...`);
+                    // Try again after a short delay
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    agentAddress = await factoryContract.agents(branch_hash);
+                    isNewDeployment = false;
+                  } else {
+                    throw deployError; // Re-throw if it's a different error
+                  }
                 }
+              } else {
+                console.log(`Agent already exists on-chain at: ${agentAddress}`);
+                isNewDeployment = false;
               }
             }
             
