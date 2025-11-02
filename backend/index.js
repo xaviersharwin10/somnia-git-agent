@@ -154,11 +154,17 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
       SOMNIA_RPC_URL: process.env.SOMNIA_RPC_URL || 'https://dream-rpc.somnia.network',
       // We can add other default envs here
     };
+    
+    // Debug: Log what we're setting
+    console.log(`[startOrReloadAgent] Setting env for agent ${agent.id}: REPO_URL=${agent.repo_url}, BRANCH_NAME=${agent.branch_name}`);
+    
     db.all('SELECT key, encrypted_value FROM secrets WHERE agent_id = ?', [agent.id], (err, rows) => {
       if (err) return reject(err);
       rows.forEach(row => {
         secrets[row.key] = crypto.decrypt(row.encrypted_value);
       });
+      console.log(`[startOrReloadAgent] Final env keys: ${Object.keys(secrets).join(', ')}`);
+      console.log(`[startOrReloadAgent] REPO_URL value: ${secrets.REPO_URL || 'EMPTY'}`);
       resolve(secrets);
     });
   });
@@ -205,8 +211,8 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
         const existingProc = processList.find(p => p.name === pm2Name);
         
         if (existingProc) {
-          // App exists, reload it
-          pm2.reload(pm2Name, (reloadErr, proc) => {
+          // App exists, reload it with updated env
+          pm2.reload(pm2Name, { updateEnv: true }, (reloadErr, proc) => {
             pm2.disconnect();
             if (reloadErr) return reject(reloadErr);
             
