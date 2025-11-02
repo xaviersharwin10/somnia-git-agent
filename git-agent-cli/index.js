@@ -14,9 +14,9 @@ program.version('1.0.0');
 
 // --- Configuration ---
 // This is the *public URL* of our backend (from Day 7)
-// For local testing, use http://localhost:3000
+// For local testing, use http://localhost:3005
 // For production, use your deployed backend URL
-const API_BASE_URL = 'https://unabortive-davion-refractorily.ngrok-free.dev'; // TODO: Update this URL for production
+const API_BASE_URL = 'https://somnia-git-agent.onrender.com'; // Production backend URL
 const CONFIG_FILE = '.gitagent.json';
 
 // --- Helper Functions ---
