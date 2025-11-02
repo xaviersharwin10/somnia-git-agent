@@ -57,7 +57,14 @@ async function getStats(repo_url, branch_name) {
     const { data } = await axios.get(url);
     return { ...data, branch_name, repo_url };
   } catch (err) {
-    console.error(chalk.red(`Error fetching stats for ${branch_name}: ${err.response?.data?.error || err.message}`));
+    const errorMsg = err.response?.data?.error || err.message;
+    if (err.response?.status === 404) {
+      console.error(chalk.red(`Agent not found for branch "${branch_name}"`));
+      console.log(chalk.yellow(`  → Make sure you've pushed this branch: ${chalk.cyan(`git push origin ${branch_name}`)}`));
+      console.log(chalk.yellow(`  → The backend webhook will deploy it automatically`));
+    } else {
+      console.error(chalk.red(`Error fetching stats for ${branch_name}: ${errorMsg}`));
+    }
     return null;
   }
 }
@@ -158,13 +165,28 @@ program
     console.log(chalk.cyan(`📊 Fetching stats for ${branch_name}...`));
     const result = await getStats(config.repo_url, branch_name);
 
+    if (!result) {
+      console.log(chalk.yellow(`\n⚠️  Could not fetch stats for "${branch_name}"`));
+      console.log(chalk.yellow(`   The agent may not be deployed yet, or there was an error.`));
+      return;
+    }
+
     if (result && result.stats) {
       const s = result.stats;
+      const totalDecisions = s.total_decisions || 0;
+      
       console.log(chalk.bold(`\n--- Agent Performance: ${branch_name} ---`));
-      console.log(chalk.green(`  Total Decisions:  ${s.total_decisions || 0}`));
+      console.log(chalk.green(`  Total Decisions:  ${totalDecisions}`));
       console.log(chalk.cyan(`  BUY Signals:     ${s.buy_count || 0}`));
       console.log(chalk.yellow(`  HOLD Signals:    ${s.hold_count || 0}`));
       console.log(chalk.magenta(`  Trades Executed: ${s.trades_executed || 0}`));
+      
+      if (totalDecisions === 0) {
+        console.log(chalk.yellow(`\n⚠️  No decisions recorded yet.`));
+        console.log(chalk.yellow(`   → Check if the agent is running: ${chalk.cyan('git agent logs')}`));
+        console.log(chalk.yellow(`   → Make sure the agent process is active`));
+        return;
+      }
       
       if (s.avg_price) {
         console.log(`\n  Price Statistics:`);
@@ -179,8 +201,8 @@ program
         console.log(`    Last Decision:  ${s.last_decision}`);
       }
       
-      if (s.trades_executed > 0) {
-        const successRate = ((s.trades_executed / s.total_decisions) * 100).toFixed(1);
+      if (s.trades_executed > 0 && totalDecisions > 0) {
+        const successRate = ((s.trades_executed / totalDecisions) * 100).toFixed(1);
         console.log(chalk.green(`\n  Success Rate: ${successRate}%`));
       }
     } else {
@@ -232,10 +254,23 @@ program
       getStats(config.repo_url, branch2)
     ]);
 
-    if (!result1 || !result2 || !result1.stats || !result2.stats) {
+    if (!result1 || !result2) {
       console.error(chalk.red('Could not fetch stats for comparison.'));
-      if (!result1) console.log(chalk.yellow(`  ${branch1}: No metrics available`));
-      if (!result2) console.log(chalk.yellow(`  ${branch2}: No metrics available`));
+      if (!result1) {
+        console.log(chalk.yellow(`  ${branch1}: Agent not found or error occurred`));
+        console.log(chalk.yellow(`    → Make sure you've pushed: ${chalk.cyan(`git push origin ${branch1}`)}`));
+      }
+      if (!result2) {
+        console.log(chalk.yellow(`  ${branch2}: Agent not found or error occurred`));
+        console.log(chalk.yellow(`    → Make sure you've pushed: ${chalk.cyan(`git push origin ${branch2}`)}`));
+      }
+      return;
+    }
+
+    if (!result1.stats || !result2.stats) {
+      console.log(chalk.yellow('\n⚠️  One or both agents have no metrics yet.'));
+      if (!result1.stats) console.log(chalk.yellow(`  ${branch1}: Waiting for first decision...`));
+      if (!result2.stats) console.log(chalk.yellow(`  ${branch2}: Waiting for first decision...`));
       return;
     }
 
