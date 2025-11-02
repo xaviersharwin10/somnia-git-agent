@@ -211,15 +211,34 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
         const existingProc = processList.find(p => p.name === pm2Name);
         
         if (existingProc) {
-          // App exists, reload it with updated env
-          pm2.reload(pm2Name, { updateEnv: true }, (reloadErr, proc) => {
-            pm2.disconnect();
-            if (reloadErr) return reject(reloadErr);
-            
-            const pid = proc?.[0]?.pid || existingProc.pid;
-            db.run('UPDATE agents SET status = ?, pid = ? WHERE id = ?', ['running', pid, agent.id]);
-            console.log(`Agent ${agent.id} reloaded with PID ${pid}`);
-            resolve(proc || existingProc);
+          // App exists - delete and restart to ensure env vars are updated
+          pm2.delete(pm2Name, (deleteErr) => {
+            if (deleteErr) {
+              console.warn(`Failed to delete existing process, trying reload: ${deleteErr.message}`);
+              // Fallback to reload if delete fails
+              pm2.reload(pm2Name, { updateEnv: true }, (reloadErr, proc) => {
+                pm2.disconnect();
+                if (reloadErr) return reject(reloadErr);
+                const pid = proc?.[0]?.pid || existingProc.pid;
+                db.run('UPDATE agents SET status = ?, pid = ? WHERE id = ?', ['running', pid, agent.id]);
+                console.log(`Agent ${agent.id} reloaded with PID ${pid}`);
+                resolve(proc || existingProc);
+              });
+            } else {
+              // Start fresh with updated env vars
+              pm2.start(pm2App, (startErr, proc) => {
+                pm2.disconnect();
+                if (startErr) return reject(startErr);
+                const pid = proc?.[0]?.pid;
+                if (pid) {
+                  db.run('UPDATE agents SET status = ?, pid = ? WHERE id = ?', ['running', pid, agent.id]);
+                  console.log(`Agent ${agent.id} restarted with PID ${pid} (with updated env vars)`);
+                } else {
+                  console.warn(`Agent ${agent.id} restarted but PID not available`);
+                }
+                resolve(proc);
+              });
+            }
           });
         } else {
           // App not found, start it
@@ -852,7 +871,13 @@ app.post('/api/agents/manual-trigger', async (req, res) => {
             });
         });
 
-        const newAgent = { id: newAgentId, agent_address: agentAddress };
+        const newAgent = { 
+          id: newAgentId, 
+          agent_address: agentAddress,
+          repo_url: repo_url,
+          branch_name: branch_name,
+          branch_hash: branch_hash
+        };
         await startOrReloadAgent(newAgent, agentPath, branch_hash);
 
         res.json({ success: true, agent_id: newAgentId, agent_address: agentAddress });
