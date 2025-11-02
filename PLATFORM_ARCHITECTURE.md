@@ -137,16 +137,35 @@ Based on: [Somnia DEX Tutorial](https://docs.somnia.network/developer/building-d
 
 ---
 
-## 🏗️ Production Improvements (Future)
+## 🏗️ Production Improvements
 
-### Multi-Repository Isolation
+### ✅ Multi-Repository Filtering (IMPLEMENTED)
 
-**Option 1: Filter by Repository**
-- Dashboard could filter agents by `repo_url`
-- Users see only their own agents
-- Backend API: `/api/agents?repo_url=github.com/user/repo`
+**Repository Filter in Dashboard**
+- ✅ Dashboard now has a dropdown to filter by repository
+- ✅ Users can select "All Repositories" or a specific one
+- ✅ Backend API supports `?repo_url=` query parameter
+- ✅ Comparison table also respects the filter
+- ✅ Repository name shown when viewing all agents
 
-**Option 2: User Authentication**
+**How to Use:**
+1. Open dashboard: `http://localhost:3005/dashboard`
+2. Use the "Filter by Repository" dropdown
+3. Select a repository to see only its agents
+4. Or select "All Repositories" to see everything
+
+**API Usage:**
+```bash
+# Get all agents
+GET /api/agents
+
+# Get agents from specific repository
+GET /api/agents?repo_url=https://github.com/user/repo.git
+```
+
+### Future Improvements
+
+**Option 1: User Authentication** (Not implemented yet)
 - Add user accounts
 - Link repositories to users
 - Dashboard shows only user's agents
