@@ -87,14 +87,16 @@
         }
 
         .header-left h1 {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 700;
-            background: var(--gradient-main);
+            background: var(--gradient-somnia);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 8px;
-            letter-spacing: -0.5px;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+            font-family: 'Space Grotesk', sans-serif;
         }
 
         .header-left .subtitle {
@@ -119,14 +121,28 @@
         .pulse-dot {
             width: 8px;
             height: 8px;
-            background: var(--accent-success);
+            background: var(--accent-cyan);
             border-radius: 50%;
-            animation: pulse 2s infinite;
+            animation: pulse-cyan 2s infinite;
+            box-shadow: 0 0 8px var(--accent-cyan);
         }
 
         @keyframes pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        @keyframes pulse-cyan {
+            0%, 100% { 
+                opacity: 1; 
+                transform: scale(1);
+                box-shadow: 0 0 8px var(--accent-cyan);
+            }
+            50% { 
+                opacity: 0.7; 
+                transform: scale(1.3);
+                box-shadow: 0 0 16px var(--accent-cyan);
+            }
         }
 
         /* Grid Layout */
@@ -156,14 +172,14 @@
             left: 0;
             right: 0;
             height: 3px;
-            background: var(--gradient-main);
+            background: var(--gradient-somnia);
             transform: scaleX(0);
             transition: transform 0.3s ease;
         }
 
         .card:hover {
             transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow-lg), var(--glow-purple);
             border-color: var(--accent-primary);
         }
 
@@ -246,7 +262,7 @@
         }
 
         .agent-list::-webkit-scrollbar-thumb {
-            background: var(--accent-primary);
+            background: var(--accent-cyan);
             border-radius: 10px;
         }
 
@@ -263,12 +279,14 @@
         .agent-item:hover {
             background: var(--bg-primary);
             border-color: var(--accent-primary);
+            box-shadow: 0 0 8px rgba(124, 58, 237, 0.2);
             transform: translateX(4px);
         }
 
         .agent-item.active {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%);
             border-color: var(--accent-primary);
+            box-shadow: 0 0 12px rgba(124, 58, 237, 0.3);
         }
 
         .agent-item-content {
@@ -319,9 +337,10 @@
         }
 
         .status-badge.running {
-            background: rgba(16, 185, 129, 0.15);
+            background: rgba(34, 197, 94, 0.15);
             color: var(--accent-success);
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.2);
         }
 
         .status-badge.error {
@@ -377,14 +396,15 @@
         }
 
         .stat-value {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 700;
-            background: var(--gradient-main);
+            background: var(--gradient-somnia);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 6px;
             transition: transform 0.3s ease;
+            font-family: 'Space Grotesk', sans-serif;
         }
 
         .stat-card:hover .stat-value {
@@ -418,13 +438,15 @@
         }
 
         .price-value {
-            font-size: 48px;
+            font-size: 52px;
             font-weight: 700;
-            background: var(--gradient-main);
+            background: var(--gradient-somnia);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             transition: all 0.3s ease;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: -1px;
         }
 
         /* Decision Badge */
@@ -458,13 +480,19 @@
         .decision-badge.BUY {
             background: var(--gradient-success);
             color: white;
-            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4), var(--glow-cyan);
+            animation: pulse-glow 2s infinite;
         }
 
         .decision-badge.HOLD {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: white;
             box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4), var(--glow-cyan); }
+            50% { box-shadow: 0 4px 24px rgba(34, 197, 94, 0.6), 0 0 30px rgba(6, 182, 212, 0.6); }
         }
 
         .decision-badge:hover {
@@ -501,11 +529,12 @@
 
         .progress-fill {
             height: 100%;
-            background: var(--gradient-success);
+            background: var(--gradient-somnia);
             border-radius: 10px;
             transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 0 10px rgba(124, 58, 237, 0.5);
         }
 
         .progress-fill::after {
@@ -526,17 +555,17 @@
 
         /* Logs Container */
         .logs-container {
-            background: #0a0e27;
+            background: #0a0e17;
             border: 1px solid var(--border-color);
             border-radius: 14px;
             padding: 20px;
-            font-family: 'Courier New', 'Monaco', monospace;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
             font-size: 13px;
             max-height: 450px;
             overflow-y: auto;
             line-height: 1.8;
             scrollbar-width: thin;
-            scrollbar-color: var(--accent-primary) transparent;
+            scrollbar-color: var(--accent-cyan) transparent;
         }
 
         .logs-container::-webkit-scrollbar {
@@ -580,24 +609,41 @@
 
         /* Buttons */
         .btn {
-            background: var(--gradient-main);
+            background: var(--gradient-somnia);
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 14px 24px;
             border-radius: 12px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             width: 100%;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-family: inherit;
+            letter-spacing: 1px;
+            font-family: 'Space Grotesk', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
         }
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 6px 24px rgba(124, 58, 237, 0.5), var(--glow-purple);
         }
 
         .btn:active {
@@ -683,13 +729,15 @@
             align-items: center;
             gap: 6px;
             padding: 4px 10px;
-            background: var(--gradient-main);
+            background: var(--gradient-somnia);
             border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
             color: white;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            font-family: 'Space Grotesk', sans-serif;
+            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
         }
 
         /* Empty States */
@@ -743,8 +791,8 @@
         <header>
             <div class="header-content">
                 <div class="header-left">
-                    <h1>GitAgent Dashboard</h1>
-                    <p class="subtitle">AI Trading Agents on Somnia Testnet</p>
+                    <h1>⚡ GitAgent</h1>
+                    <p class="subtitle">Autonomous AI Agents on Somnia Network</p>
                 </div>
                 <div class="header-badge">
                     <span class="pulse-dot"></span>
