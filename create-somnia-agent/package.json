@@ -1,0 +1,19 @@
+{
+  "name": "create-somnia-agent",
+  "version": "1.0.0",
+  "description": "Create a new Somnia AI agent project",
+  "main": "index.js",
+  "bin": {
+    "create-somnia-agent": "./index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["somnia", "ai", "agent", "blockchain", "template"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "shelljs": "^0.10.0"
+  }
+}

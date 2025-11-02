@@ -1,0 +1,13 @@
+{
+  "ignore": [
+    "agents/**/*",
+    "node_modules/**/*",
+    "*.log",
+    "db.sqlite",
+    "db.sqlite-journal"
+  ],
+  "watch": [
+    "index.js",
+    "database.js"
+  ]
+}

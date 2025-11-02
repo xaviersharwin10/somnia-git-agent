@@ -1,0 +1,20 @@
+{
+  "name": "gitfi",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx hardhat test",
+    "compile": "npx hardhat compile",
+    "deploy": "npx hardhat run scripts/deploy.js --network somnia",
+    "deploy:local": "npx hardhat run scripts/deploy.js --network hardhat",
+    "clean": "npx hardhat clean"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.26.3"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "gitagent-backend",
+  "version": "1.0.0",
+  "description": "GitAgent Backend Server for GitHub Webhooks and Agent Management",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "gitagent",
+    "webhook",
+    "blockchain",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "ethers": "^6.8.1",
+    "express": "^4.18.2",
+    "pm2": "^6.0.13",
+    "shelljs": "^0.10.0",
+    "simple-crypto-js": "^2.5.1",
+    "sqlite3": "^5.1.6",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
