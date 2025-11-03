@@ -185,7 +185,7 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
       }
       
       console.log(`[startOrReloadAgent] Final env keys: ${Object.keys(secrets).join(', ')}`);
-      console.log(`[startOrReloadAgent] REPO_URL: ${secrets.REPO_URL || '❌ EMPTY - AGENT WON'T SEND METRICS!'}`);
+      console.log(`[startOrReloadAgent] REPO_URL: ${secrets.REPO_URL || '❌ EMPTY - AGENT WILL NOT SEND METRICS'}`);
       console.log(`[startOrReloadAgent] BRANCH_NAME: ${secrets.BRANCH_NAME || '❌ EMPTY'}`);
       resolve(secrets);
     });
