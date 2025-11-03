@@ -1,8 +1,9 @@
 {
   "name": "git-somnia-agent",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Command-line tool for interacting with the GitAgent platform on Somnia",
   "main": "index.js",
+  "readme": "README.md",
   "bin": {
     "git-somnia-agent": "./index.js"
   },
