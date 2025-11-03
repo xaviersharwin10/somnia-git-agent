@@ -1004,7 +1004,43 @@ app.get('/api/logs/:branch_hash', (req, res) => {
         const lastLines = logs.split('\n').slice(-50).filter(line => line.trim());
         res.status(200).json({ logs: lastLines, source: 'error' });
       } else {
-        res.status(404).json({ error: 'Log file not found. Is the agent running?' });
+        // If no PM2 logs, return recent metrics as logs
+        db.get('SELECT id FROM agents WHERE branch_hash = ?', [branch_hash], (err, agent) => {
+          if (err || !agent) {
+            return res.status(404).json({ error: 'Agent not found' });
+          }
+          
+          db.all(
+            'SELECT decision, price, timestamp, trade_executed, trade_tx_hash FROM metrics WHERE agent_id = ? ORDER BY timestamp DESC LIMIT 50',
+            [agent.id],
+            (err, metrics) => {
+              if (err) {
+                return res.status(500).json({ error: 'Database error' });
+              }
+              
+              if (metrics.length === 0) {
+                return res.status(200).json({ 
+                  logs: ['No logs available yet. Agent may be starting up or waiting for first decision.'],
+                  source: 'metrics',
+                  note: 'PM2 logs not available. Showing metrics instead.'
+                });
+              }
+              
+              // Convert metrics to log-like format
+              const logLines = metrics.map(m => {
+                const timestamp = new Date(m.timestamp).toISOString();
+                const tradeInfo = m.trade_executed ? ` [Trade: ${m.trade_tx_hash?.substring(0, 10)}...]` : '';
+                return `[${timestamp}] ${m.decision} - Price: $${m.price?.toFixed(4) || 'N/A'}${tradeInfo}`;
+              });
+              
+              res.status(200).json({ 
+                logs: logLines,
+                source: 'metrics',
+                note: 'PM2 logs not available. Showing recent decisions from metrics.'
+              });
+            }
+          );
+        });
       }
     }
   } catch (error) {
