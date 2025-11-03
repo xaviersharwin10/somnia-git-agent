@@ -1498,7 +1498,8 @@ async function recoverAgentsFromBlockchain() {
     // Known agents to recover (add more as needed)
     const knownAgents = [
       { repo_url: 'https://github.com/xaviersharwin10/gitAgent.git', branch_name: 'main' },
-      { repo_url: 'https://github.com/xaviersharwin10/gitAgent.git', branch_name: 'aggressive' }
+      { repo_url: 'https://github.com/xaviersharwin10/gitAgent.git', branch_name: 'aggressive' },
+      { repo_url: 'https://github.com/xaviersharwin10/gitAgent.git', branch_name: 'moderate' }
     ];
 
     const { agentFactoryContract: factoryContract } = getEthersSetup();
