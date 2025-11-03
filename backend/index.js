@@ -158,15 +158,35 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
     };
     
     // Debug: Log what we're setting
-    console.log(`[startOrReloadAgent] Setting env for agent ${agent.id}: REPO_URL=${agent.repo_url}, BRANCH_NAME=${agent.branch_name}`);
+    console.log(`[startOrReloadAgent] Setting env for agent ${agent.id} (${agent.branch_name || 'unknown'}): REPO_URL=${agent.repo_url || 'MISSING'}, BRANCH_NAME=${agent.branch_name || 'MISSING'}`);
+    
+    // CRITICAL: Ensure repo_url and branch_name are set even if agent object doesn't have them
+    if (!secrets.REPO_URL && agent.repo_url) {
+      secrets.REPO_URL = agent.repo_url;
+      console.log(`[startOrReloadAgent] ✅ Added REPO_URL from agent object: ${agent.repo_url}`);
+    }
+    if (!secrets.BRANCH_NAME && agent.branch_name) {
+      secrets.BRANCH_NAME = agent.branch_name;
+      console.log(`[startOrReloadAgent] ✅ Added BRANCH_NAME from agent object: ${agent.branch_name}`);
+    }
     
     db.all('SELECT key, encrypted_value FROM secrets WHERE agent_id = ?', [agent.id], (err, rows) => {
       if (err) return reject(err);
       rows.forEach(row => {
         secrets[row.key] = crypto.decrypt(row.encrypted_value);
       });
+      
+      // Ensure repo_url and branch_name are always set (from agent object if not in secrets)
+      if (!secrets.REPO_URL && agent.repo_url) {
+        secrets.REPO_URL = agent.repo_url;
+      }
+      if (!secrets.BRANCH_NAME && agent.branch_name) {
+        secrets.BRANCH_NAME = agent.branch_name;
+      }
+      
       console.log(`[startOrReloadAgent] Final env keys: ${Object.keys(secrets).join(', ')}`);
-      console.log(`[startOrReloadAgent] REPO_URL value: ${secrets.REPO_URL || 'EMPTY'}`);
+      console.log(`[startOrReloadAgent] REPO_URL: ${secrets.REPO_URL || '❌ EMPTY - AGENT WON'T SEND METRICS!'}`);
+      console.log(`[startOrReloadAgent] BRANCH_NAME: ${secrets.BRANCH_NAME || '❌ EMPTY'}`);
       resolve(secrets);
     });
   });
@@ -254,27 +274,43 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
             }
           });
         } else {
+          // App not found, check if agent directory exists first
+          const agentTsPath = path.join(agentPath, 'agent.ts');
+          if (!fs.existsSync(agentTsPath)) {
+            pm2.disconnect();
+            const errorMsg = `Agent file not found: ${agentTsPath}`;
+            console.error(`❌ ${errorMsg}`);
+            db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id]);
+            return reject(new Error(errorMsg));
+          }
+          
           // App not found, start it
+          console.log(`[PM2] Starting agent ${agent.id} (${agent.branch_name}) at ${agentTsPath}`);
           pm2.start(pm2App, (startErr, proc) => {
             if (startErr) {
               pm2.disconnect();
               // Update status to error if start fails
               db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id]);
-              console.error(`Failed to start agent ${agent.id}:`, startErr);
+              console.error(`❌ Failed to start agent ${agent.id} (${agent.branch_name}):`, startErr.message || startErr);
               return reject(startErr);
             }
-            pm2.disconnect();
             
             // Update DB with pid and status
             const pid = proc?.[0]?.pid;
             if (pid) {
-              db.run('UPDATE agents SET status = ?, pid = ? WHERE id = ?', ['running', pid, agent.id]);
-              console.log(`✅ Agent ${agent.id} (${agent.branch_name}) started with PID ${pid}`);
+              db.run('UPDATE agents SET status = ?, pid = ? WHERE id = ?', ['running', pid, agent.id], (updateErr) => {
+                if (updateErr) console.error('Error updating status:', updateErr);
+              });
+              console.log(`✅ Agent ${agent.id} (${agent.branch_name || 'unknown'}) started with PID ${pid}`);
             } else {
               // Even without PID, mark as running if PM2 says it started
-              db.run('UPDATE agents SET status = ? WHERE id = ?', ['running', agent.id]);
-              console.log(`✅ Agent ${agent.id} (${agent.branch_name}) started (PID not available)`);
+              db.run('UPDATE agents SET status = ? WHERE id = ?', ['running', agent.id], (updateErr) => {
+                if (updateErr) console.error('Error updating status:', updateErr);
+              });
+              console.log(`✅ Agent ${agent.id} (${agent.branch_name || 'unknown'}) started (PID not available)`);
             }
+            
+            pm2.disconnect();
             resolve(proc);
           });
         }
