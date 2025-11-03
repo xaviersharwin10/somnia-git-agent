@@ -1124,7 +1124,7 @@ app.post('/api/agents/manual-trigger', async (req, res) => {
 });
 
 // Agent management endpoints
-app.get('/api/agents', (req, res) => {
+app.get('/api/agents', async (req, res) => {
   const repo_url = req.query.repo_url; // Optional filter by repository
   
   let query = 'SELECT id, repo_url, branch_name, branch_hash, agent_address, status, pid, created_at FROM agents';
@@ -1137,11 +1137,88 @@ app.get('/api/agents', (req, res) => {
   
   query += ' ORDER BY created_at DESC';
   
-  db.all(query, params, (err, rows) => {
+  db.all(query, params, async (err, rows) => {
     if (err) {
       console.error('Error fetching agents:', err);
       return res.status(500).json({ error: 'Database error' });
     }
+    
+    // Sync status from PM2 for agents that should be running
+    if (rows && rows.length > 0) {
+      try {
+        await new Promise((resolve) => {
+          pm2.connect((connectErr) => {
+            if (connectErr) {
+              // PM2 not available - that's okay, return agents as-is
+              resolve();
+              return;
+            }
+            
+            pm2.list((listErr, processList) => {
+              if (listErr) {
+                pm2.disconnect();
+                resolve();
+                return;
+              }
+              
+              // Update status based on PM2 state
+              const updatePromises = rows.map((agent) => {
+                return new Promise((resolveUpdate) => {
+                  if (agent.status === 'deploying' || agent.status === 'running') {
+                    const pm2Name = agent.branch_hash.replace('0x', '').substring(0, 16);
+                    const pm2Proc = processList.find(p => p.name === pm2Name);
+                    
+                    if (pm2Proc) {
+                      // PM2 process exists - check if it's actually running
+                      if (pm2Proc.pm2_env.status === 'online') {
+                        if (agent.status !== 'running') {
+                          db.run('UPDATE agents SET status = ?, pid = ? WHERE id = ?', 
+                            ['running', pm2Proc.pid, agent.id], () => {
+                            agent.status = 'running';
+                            resolveUpdate();
+                          });
+                        } else {
+                          resolveUpdate();
+                        }
+                      } else if (pm2Proc.pm2_env.status === 'stopped' || pm2Proc.pm2_env.status === 'errored') {
+                        if (agent.status !== 'error') {
+                          db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id], () => {
+                            agent.status = 'error';
+                            resolveUpdate();
+                          });
+                        } else {
+                          resolveUpdate();
+                        }
+                      } else {
+                        resolveUpdate();
+                      }
+                    } else if (agent.status === 'running') {
+                      // PM2 process not found but DB says running - mark as error
+                      db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id], () => {
+                        agent.status = 'error';
+                        resolveUpdate();
+                      });
+                    } else {
+                      resolveUpdate();
+                    }
+                  } else {
+                    resolveUpdate();
+                  }
+                });
+              });
+              
+              Promise.all(updatePromises).then(() => {
+                pm2.disconnect();
+                resolve();
+              });
+            });
+          });
+        });
+      } catch (syncError) {
+        console.warn('Error syncing PM2 status:', syncError.message);
+      }
+    }
+    
     res.json({ agents: rows });
   });
 });
