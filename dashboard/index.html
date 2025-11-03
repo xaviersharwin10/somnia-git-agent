@@ -1042,7 +1042,17 @@
                 const response = await fetch(url);
                 const data = await response.json();
                 
-                allAgents = data.agents || [];
+                const newAgents = data.agents || [];
+                
+                // Auto-select newly deployed agents
+                if (newAgents.length > allAgents.length) {
+                    const newAgent = newAgents.find(a => !allAgents.find(old => old.branch_hash === a.branch_hash));
+                    if (newAgent && !selectedAgentId) {
+                        selectAgent(newAgent.branch_hash);
+                    }
+                }
+                
+                allAgents = newAgents;
                 await loadRepositories();
                 displayAgents(allAgents);
             } catch (error) {
@@ -1246,16 +1256,18 @@
             }
         }
 
-        // Auto-refresh
+        // Auto-refresh - more frequent to catch new deployments
         agentInterval = setInterval(() => {
             loadAgents();
             loadComparison();
-        }, 10000);
+        }, 5000); // Check every 5 seconds for new agents
 
         logInterval = setInterval(() => {
-            loadLogs();
-            loadStats();
-        }, 5000);
+            if (selectedAgentId) {
+                loadLogs();
+                loadStats();
+            }
+        }, 3000); // Refresh logs/stats every 3 seconds
 
         // Initial load
         loadRepositories();

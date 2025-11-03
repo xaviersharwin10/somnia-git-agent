@@ -1154,8 +1154,44 @@ app.post('/api/agents/:id/restart', (req, res) => {
 
     try {
       const agentPath = path.join(AGENTS_DIR, agent.branch_hash);
+      
+      // Ensure agent has all required fields
+      if (!agent.repo_url || !agent.branch_name) {
+        console.log(`Agent ${agentId} missing repo_url/branch_name, fetching from DB...`);
+        const fullAgent = await new Promise((resolve, reject) => {
+          db.get('SELECT * FROM agents WHERE id = ?', [agentId], (err, row) => {
+            if (err) return reject(err);
+            resolve(row);
+          });
+        });
+        Object.assign(agent, fullAgent);
+      }
+      
       await startOrReloadAgent(agent, agentPath, agent.branch_hash);
       res.json({ success: true, message: 'Agent restarted' });
+    } catch (error) {
+      console.error('Error restarting agent:', error);
+      res.status(500).json({ error: 'Failed to restart agent' });
+    }
+  });
+});
+
+// Restart agent by branch_hash
+app.post('/api/agents/branch/:branch_hash/restart', (req, res) => {
+  const branch_hash = req.params.branch_hash;
+  db.get('SELECT * FROM agents WHERE branch_hash = ?', [branch_hash], async (err, agent) => {
+    if (err) {
+      console.error('Error fetching agent:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    try {
+      const agentPath = path.join(AGENTS_DIR, agent.branch_hash);
+      await startOrReloadAgent(agent, agentPath, agent.branch_hash);
+      res.json({ success: true, message: 'Agent restarted', agent: { branch_name: agent.branch_name, branch_hash } });
     } catch (error) {
       console.error('Error restarting agent:', error);
       res.status(500).json({ error: 'Failed to restart agent' });
@@ -1201,7 +1237,15 @@ app.get('/api/logs/:branch_hash', (req, res) => {
   
   // Remove 0x prefix and get first 16 chars for PM2 name
   const pm2Name = branch_hash.replace('0x', '').substring(0, 16);
-  const logPath = path.join(process.env.HOME || process.env.USERPROFILE || '/tmp', '.pm2', 'logs', `${pm2Name}-out.log`);
+  
+  // PM2 logs location - try multiple paths (local dev vs production)
+  const possibleLogPaths = [
+    path.join(process.env.HOME || process.env.USERPROFILE || '/tmp', '.pm2', 'logs', `${pm2Name}-out.log`),
+    path.join('/tmp', '.pm2', 'logs', `${pm2Name}-out.log`),
+    path.join(process.cwd(), '.pm2', 'logs', `${pm2Name}-out.log`)
+  ];
+  
+  let logPath = possibleLogPaths.find(p => fs.existsSync(p)) || possibleLogPaths[0];
 
   try {
     if (fs.existsSync(logPath)) {
@@ -1521,17 +1565,42 @@ async function recoverAgentsFromBlockchain() {
 
           if (!existing) {
             // Create DB entry
-            await new Promise((resolve, reject) => {
+            const recoveredAgentId = await new Promise((resolve, reject) => {
               db.run(
                 'INSERT INTO agents (repo_url, branch_name, branch_hash, agent_address, status) VALUES (?, ?, ?, ?, ?)',
-                [agentInfo.repo_url, agentInfo.branch_name, branch_hash, agentAddress, 'running'],
+                [agentInfo.repo_url, agentInfo.branch_name, branch_hash, agentAddress, 'deploying'],
                 function (err) {
                   if (err) return reject(err);
                   resolve(this.lastID);
                 }
               );
             });
+            
             console.log(`✅ Recovered agent: ${agentInfo.branch_name} (${agentAddress})`);
+            
+            // Auto-start recovered agent
+            try {
+              const agentPath = path.join(AGENTS_DIR, branch_hash);
+              const recoveredAgent = {
+                id: recoveredAgentId,
+                repo_url: agentInfo.repo_url,
+                branch_name: agentInfo.branch_name,
+                branch_hash: branch_hash,
+                agent_address: agentAddress,
+                status: 'deploying'
+              };
+              
+              // Check if agent directory exists (needs to be cloned first)
+              if (fs.existsSync(agentPath) && fs.existsSync(path.join(agentPath, 'agent.ts'))) {
+                await startOrReloadAgent(recoveredAgent, agentPath, branch_hash);
+                console.log(`🚀 Started recovered agent: ${agentInfo.branch_name}`);
+              } else {
+                console.log(`ℹ️ Agent directory not found for ${agentInfo.branch_name}, will start on next push`);
+              }
+            } catch (startError) {
+              console.warn(`⚠️ Could not start recovered agent ${agentInfo.branch_name}:`, startError.message);
+            }
+            
             recovered++;
           }
         }
