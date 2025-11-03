@@ -679,7 +679,14 @@ app.post('/webhook/github', (req, res) => {
                     resolve();
                   });
               });
-              newAgent = { id: existingAgentInDb.id, agent_address: agentAddress };
+              newAgent = { 
+                ...existingAgentInDb,
+                id: existingAgentInDb.id, 
+                agent_address: agentAddress,
+                repo_url: existingAgentInDb.repo_url || repo_url,
+                branch_name: existingAgentInDb.branch_name || branch_name,
+                branch_hash: branch_hash
+              };
               console.log(`Updated existing agent record in database.`);
             } else {
               const newAgentId = await new Promise((resolve, reject) => {
@@ -690,7 +697,13 @@ app.post('/webhook/github', (req, res) => {
                     resolve(this.lastID);
                   });
               });
-              newAgent = { id: newAgentId, agent_address: agentAddress };
+              newAgent = { 
+                id: newAgentId, 
+                agent_address: agentAddress,
+                repo_url: repo_url,
+                branch_name: branch_name,
+                branch_hash: branch_hash
+              };
               console.log(`Created new agent record in database.`);
             }
 
@@ -932,7 +945,14 @@ app.post('/webhook/github/push', async (req, res) => {
                   }
                 );
               });
-              newAgent = { id: existingAgentInDb.id, agent_address: agentAddress };
+              newAgent = { 
+                ...existingAgentInDb,
+                id: existingAgentInDb.id, 
+                agent_address: agentAddress,
+                repo_url: existingAgentInDb.repo_url || repo_url,
+                branch_name: existingAgentInDb.branch_name || branch_name,
+                branch_hash: branch_hash
+              };
               console.log(`Updated existing agent record in database.`);
             } else {
               // Insert new record
@@ -946,7 +966,13 @@ app.post('/webhook/github/push', async (req, res) => {
                   }
                 );
               });
-              newAgent = { id: newAgentId, agent_address: agentAddress };
+              newAgent = { 
+                id: newAgentId, 
+                agent_address: agentAddress,
+                repo_url: repo_url,
+                branch_name: branch_name,
+                branch_hash: branch_hash
+              };
               console.log(`Created new agent record in database.`);
             }
 
