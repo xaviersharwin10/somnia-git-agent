@@ -1770,12 +1770,41 @@ async function recoverAgentsFromBlockchain() {
                 status: 'deploying'
               };
               
-              // Check if agent directory exists (needs to be cloned first)
-              if (fs.existsSync(agentPath) && fs.existsSync(path.join(agentPath, 'agent.ts'))) {
-                await startOrReloadAgent(recoveredAgent, agentPath, branch_hash);
-                console.log(`🚀 Started recovered agent: ${agentInfo.branch_name}`);
+              // Check if agent directory exists, if not, clone it
+              if (!fs.existsSync(agentPath) || !fs.existsSync(path.join(agentPath, 'agent.ts'))) {
+                console.log(`📥 Agent directory not found for ${agentInfo.branch_name}, cloning from GitHub...`);
+                try {
+                  // Clone the repository
+                  shell.mkdir('-p', agentPath);
+                  shell.cd(agentPath);
+                  const cloneResult = shell.exec(`git clone ${agentInfo.repo_url} . --branch ${agentInfo.branch_name}`, { silent: true });
+                  
+                  if (cloneResult.code !== 0) {
+                    console.warn(`⚠️ Failed to clone ${agentInfo.branch_name}: ${cloneResult.stderr}`);
+                    console.log(`ℹ️ Agent ${agentInfo.branch_name} will start on next push`);
+                  } else {
+                    console.log(`✅ Cloned ${agentInfo.branch_name} successfully`);
+                    // Install dependencies
+                    if (fs.existsSync(path.join(agentPath, 'package.json'))) {
+                      shell.exec('npm install', { silent: true });
+                      console.log(`✅ Installed dependencies for ${agentInfo.branch_name}`);
+                    }
+                  }
+                } catch (cloneError) {
+                  console.warn(`⚠️ Error cloning ${agentInfo.branch_name}:`, cloneError.message);
+                }
+              }
+              
+              // Now try to start if agent.ts exists
+              if (fs.existsSync(path.join(agentPath, 'agent.ts'))) {
+                try {
+                  await startOrReloadAgent(recoveredAgent, agentPath, branch_hash);
+                  console.log(`🚀 Started recovered agent: ${agentInfo.branch_name}`);
+                } catch (startError) {
+                  console.warn(`⚠️ Could not start recovered agent ${agentInfo.branch_name}:`, startError.message);
+                }
               } else {
-                console.log(`ℹ️ Agent directory not found for ${agentInfo.branch_name}, will start on next push`);
+                console.log(`ℹ️ Agent ${agentInfo.branch_name} directory/clone failed, will start on next push`);
               }
             } catch (startError) {
               console.warn(`⚠️ Could not start recovered agent ${agentInfo.branch_name}:`, startError.message);
