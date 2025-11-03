@@ -1322,13 +1322,61 @@ app.post('/api/agents/branch/:branch_hash/restart', (req, res) => {
 
     try {
       const agentPath = path.join(AGENTS_DIR, agent.branch_hash);
+      
+      // Ensure agent has all fields
+      if (!agent.repo_url || !agent.branch_name) {
+        return res.status(400).json({ 
+          error: 'Agent missing repo_url or branch_name', 
+          agent: { id: agent.id, repo_url: agent.repo_url, branch_name: agent.branch_name } 
+        });
+      }
+      
+      console.log(`[RESTART] Restarting agent: ${agent.branch_name} with REPO_URL=${agent.repo_url}`);
       await startOrReloadAgent(agent, agentPath, agent.branch_hash);
-      res.json({ success: true, message: 'Agent restarted', agent: { branch_name: agent.branch_name, branch_hash } });
+      res.json({ 
+        success: true, 
+        message: 'Agent restarted', 
+        agent: { 
+          branch_name: agent.branch_name, 
+          branch_hash,
+          repo_url: agent.repo_url
+        } 
+      });
     } catch (error) {
       console.error('Error restarting agent:', error);
-      res.status(500).json({ error: 'Failed to restart agent' });
+      res.status(500).json({ error: 'Failed to restart agent', details: error.message });
     }
   });
+});
+
+// Restart all agents (useful for fixing issues)
+app.post('/api/agents/restart-all', async (req, res) => {
+  try {
+    db.all('SELECT * FROM agents', async (err, agents) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      const results = [];
+      for (const agent of agents) {
+        try {
+          const agentPath = path.join(AGENTS_DIR, agent.branch_hash);
+          if (fs.existsSync(path.join(agentPath, 'agent.ts'))) {
+            await startOrReloadAgent(agent, agentPath, agent.branch_hash);
+            results.push({ agent: agent.branch_name, status: 'restarted' });
+          } else {
+            results.push({ agent: agent.branch_name, status: 'skipped', reason: 'agent.ts not found' });
+          }
+        } catch (error) {
+          results.push({ agent: agent.branch_name, status: 'error', error: error.message });
+        }
+      }
+      
+      res.json({ success: true, results });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Stats endpoint
