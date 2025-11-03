@@ -1,13 +1,15 @@
 {
-  "name": "git-agent-cli",
-  "version": "1.0.0",
-  "description": "Command-line tool for interacting with the GitAgent platform",
+  "name": "git-somnia-agent",
+  "version": "1.0.1",
+  "description": "Command-line tool for interacting with the GitAgent platform on Somnia",
   "main": "index.js",
   "bin": {
-    "git-agent": "./index.js"
+    "git-somnia-agent": "./index.js"
   },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xaviersharwin10/somnia-git-agent.git",
+    "directory": "git-agent-cli"
   },
   "keywords": [
     "git",
@@ -15,10 +17,17 @@
     "cli",
     "ai",
     "trading",
-    "blockchain"
+    "blockchain",
+    "somnia",
+    "web3",
+    "defi",
+    "autonomous-agents"
   ],
-  "author": "",
+  "author": "GitAgent Team",
   "license": "MIT",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "dependencies": {
     "axios": "^1.13.1",
     "chalk": "^4.1.2",
@@ -26,5 +35,8 @@
     "ethers": "^6.15.0",
     "inquirer": "^12.10.0",
     "shelljs": "^0.10.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
