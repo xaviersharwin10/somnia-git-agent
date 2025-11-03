@@ -1229,12 +1229,88 @@ app.use('*', (req, res) => {
   });
 });
 
+// Startup recovery: Recover agents from blockchain if database is empty
+async function recoverAgentsFromBlockchain() {
+  try {
+    // Check if database is empty
+    const agentCount = await new Promise((resolve, reject) => {
+      db.get('SELECT COUNT(*) as count FROM agents', (err, row) => {
+        if (err) return reject(err);
+        resolve(row?.count || 0);
+      });
+    });
+
+    if (agentCount > 0) {
+      console.log(`✅ Database has ${agentCount} agent(s), skipping recovery`);
+      return;
+    }
+
+    console.log('🔍 Database is empty, checking blockchain for existing agents...');
+    
+    // Known agents to recover (add more as needed)
+    const knownAgents = [
+      { repo_url: 'https://github.com/xaviersharwin10/gitAgent.git', branch_name: 'main' },
+      { repo_url: 'https://github.com/xaviersharwin10/gitAgent.git', branch_name: 'aggressive' }
+    ];
+
+    const { agentFactoryContract: factoryContract } = getEthersSetup();
+    let recovered = 0;
+
+    for (const agentInfo of knownAgents) {
+      try {
+        const branch_hash = ethers.id(agentInfo.repo_url + "/" + agentInfo.branch_name);
+        const agentAddress = await factoryContract.agents(branch_hash);
+        
+        if (agentAddress && agentAddress !== ethers.ZeroAddress && agentAddress !== "0x0000000000000000000000000000000000000000") {
+          // Check if already in DB
+          const existing = await new Promise((resolve, reject) => {
+            db.get('SELECT id FROM agents WHERE branch_hash = ?', [branch_hash], (err, row) => {
+              if (err) return reject(err);
+              resolve(row);
+            });
+          });
+
+          if (!existing) {
+            // Create DB entry
+            await new Promise((resolve, reject) => {
+              db.run(
+                'INSERT INTO agents (repo_url, branch_name, branch_hash, agent_address, status) VALUES (?, ?, ?, ?, ?)',
+                [agentInfo.repo_url, agentInfo.branch_name, branch_hash, agentAddress, 'running'],
+                function (err) {
+                  if (err) return reject(err);
+                  resolve(this.lastID);
+                }
+              );
+            });
+            console.log(`✅ Recovered agent: ${agentInfo.branch_name} (${agentAddress})`);
+            recovered++;
+          }
+        }
+      } catch (error) {
+        console.warn(`⚠️ Could not recover agent ${agentInfo.branch_name}:`, error.message);
+      }
+    }
+
+    if (recovered > 0) {
+      console.log(`🎉 Recovered ${recovered} agent(s) from blockchain`);
+    } else {
+      console.log('ℹ️ No agents found on blockchain to recover');
+    }
+  } catch (error) {
+    console.error('❌ Error during startup recovery:', error);
+  }
+}
+
 // Start the server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log('🚀 GitAgent Backend Server Started');
   console.log(`📡 Server running on port ${PORT}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
   console.log(`📥 GitHub webhook: http://localhost:${PORT}/webhook/github`);
+  
+  // Recover agents from blockchain on startup
+  await recoverAgentsFromBlockchain();
+  
   console.log('⏳ Waiting for GitHub webhooks...');
 });
 
