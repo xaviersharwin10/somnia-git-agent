@@ -7,6 +7,7 @@ const pm2 = require('pm2');
 const shell = require('shelljs');
 const path = require('path');
 const fs = require('fs');
+const axios = require('axios');
 
 // Enable CORS for dashboard
 const cors = require('cors');
@@ -86,6 +87,7 @@ const ABI = [
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
+const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
 
 // Ethers setup - Initialize lazily to avoid startup failures
 let provider, wallet, agentFactoryContract;
@@ -293,6 +295,190 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
+});
+
+// GitHub OAuth endpoints (Vercel-like automatic webhook setup)
+const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
+const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
+const WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'gitagent-webhook-secret';
+
+// Initiate GitHub OAuth flow
+app.get('/auth/github', (req, res) => {
+  if (!GITHUB_CLIENT_ID) {
+    return res.status(500).json({ 
+      error: 'GitHub OAuth not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.',
+      manual_setup: 'https://somnia-git-agent.onrender.com/webhook/github'
+    });
+  }
+
+  const state = require('crypto').randomBytes(32).toString('hex');
+  const redirectUri = `${BACKEND_URL}/auth/github/callback`;
+  const scope = 'repo admin:repo_hook'; // Need repo access and webhook management
+  
+  // Store state temporarily (in production, use Redis or session)
+  // For now, we'll pass repo_url as query param
+  const repoUrl = req.query.repo_url;
+  
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?` +
+    `client_id=${GITHUB_CLIENT_ID}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&scope=${encodeURIComponent(scope)}` +
+    `&state=${state}` +
+    (repoUrl ? `&repo_url=${encodeURIComponent(repoUrl)}` : '');
+  
+  res.redirect(githubAuthUrl);
+});
+
+// GitHub OAuth callback - receives code, exchanges for token, sets up webhook
+app.get('/auth/github/callback', async (req, res) => {
+  const { code, state, repo_url } = req.query;
+  
+  if (!code) {
+    return res.status(400).send('Missing authorization code. <a href="/auth/github">Try again</a>');
+  }
+
+  try {
+    // Exchange code for access token
+    const tokenResponse = await axios.post('https://github.com/login/oauth/access_token', {
+      client_id: GITHUB_CLIENT_ID,
+      client_secret: GITHUB_CLIENT_SECRET,
+      code: code
+    }, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    const { access_token, token_type } = tokenResponse.data;
+    
+    if (!access_token) {
+      return res.status(400).send('Failed to get access token. <a href="/auth/github">Try again</a>');
+    }
+
+    // Get user info
+    const userResponse = await axios.get('https://api.github.com/user', {
+      headers: { 'Authorization': `token ${access_token}` }
+    });
+    const userId = userResponse.data.login;
+    const userEmail = userResponse.data.email || `${userId}@users.noreply.github.com`;
+
+    // Parse repo URL from query or user's repos
+    let targetRepoUrl = repo_url || req.query.repo_url;
+    
+    // If no repo specified, try to find user's repos
+    if (!targetRepoUrl) {
+      const reposResponse = await axios.get('https://api.github.com/user/repos?per_page=5', {
+        headers: { 'Authorization': `token ${access_token}` }
+      });
+      
+      if (reposResponse.data.length > 0) {
+        // Use first repo as example
+        targetRepoUrl = reposResponse.data[0].clone_url;
+      }
+    }
+
+    // Encrypt and store token
+    const encryptedToken = crypto.encrypt(access_token);
+    
+    await new Promise((resolve, reject) => {
+      db.run(
+        `INSERT OR REPLACE INTO github_oauth (user_id, access_token, encrypted_token, repo_url, webhook_configured)
+         VALUES (?, ?, ?, ?, ?)`,
+        [userId, access_token, encryptedToken, targetRepoUrl, 0],
+        function(err) {
+          if (err) return reject(err);
+          resolve(this.lastID);
+        }
+      );
+    });
+
+    // Auto-configure webhook if repo URL is known
+    if (targetRepoUrl) {
+      try {
+        // Extract owner/repo from URL (e.g., https://github.com/owner/repo.git)
+        const match = targetRepoUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
+        if (match) {
+          const [, owner, repo] = match;
+          
+          // Check if webhook already exists
+          const existingWebhooks = await axios.get(
+            `https://api.github.com/repos/${owner}/${repo}/hooks`,
+            { headers: { 'Authorization': `token ${access_token}` } }
+          );
+
+          const webhookUrl = `${BACKEND_URL}/webhook/github`;
+          const webhookExists = existingWebhooks.data.some(
+            hook => hook.config.url === webhookUrl
+          );
+
+          if (!webhookExists) {
+            // Create webhook
+            await axios.post(
+              `https://api.github.com/repos/${owner}/${repo}/hooks`,
+              {
+                name: 'web',
+                active: true,
+                events: ['push'],
+                config: {
+                  url: webhookUrl,
+                  content_type: 'json',
+                  secret: WEBHOOK_SECRET,
+                  insecure_ssl: '0'
+                }
+              },
+              { headers: { 'Authorization': `token ${access_token}` } }
+            );
+
+            // Update DB
+            await new Promise((resolve, reject) => {
+              db.run(
+                'UPDATE github_oauth SET webhook_configured = 1 WHERE user_id = ?',
+                [userId],
+                (err) => err ? reject(err) : resolve()
+              );
+            });
+
+            res.send(`
+              <h1>✅ Successfully Connected!</h1>
+              <p>GitHub OAuth authorized for <strong>${userId}</strong></p>
+              <p>✅ Webhook automatically configured for <strong>${owner}/${repo}</strong></p>
+              <p>Now you can <code>git push</code> and deployments will trigger automatically!</p>
+              <hr>
+              <p><a href="/dashboard">View Dashboard</a> | <a href="/auth/github?repo_url=${encodeURIComponent(targetRepoUrl)}">Configure Another Repo</a></p>
+            `);
+            return;
+          } else {
+            res.send(`
+              <h1>✅ Successfully Connected!</h1>
+              <p>GitHub OAuth authorized for <strong>${userId}</strong></p>
+              <p>ℹ️ Webhook already exists for <strong>${owner}/${repo}</strong></p>
+              <p>You're all set! Just <code>git push</code> to deploy.</p>
+              <hr>
+              <p><a href="/dashboard">View Dashboard</a></p>
+            `);
+            return;
+          }
+        }
+      } catch (webhookError) {
+        console.error('Error setting up webhook:', webhookError.response?.data || webhookError.message);
+        // Continue even if webhook setup fails
+      }
+    }
+
+    res.send(`
+      <h1>✅ OAuth Authorized!</h1>
+      <p>GitHub connected for <strong>${userId}</strong></p>
+      <p>To set up webhook for a specific repo, visit:</p>
+      <p><code>/auth/github?repo_url=YOUR_REPO_URL</code></p>
+      <hr>
+      <p><a href="/dashboard">View Dashboard</a></p>
+    `);
+  } catch (error) {
+    console.error('OAuth callback error:', error.response?.data || error.message);
+    res.status(500).send(`
+      <h1>❌ Error</h1>
+      <p>${error.message}</p>
+      <p><a href="/auth/github">Try again</a></p>
+    `);
+  }
 });
 
 // Main GitHub webhook listener endpoint

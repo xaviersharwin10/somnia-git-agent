@@ -88,14 +88,22 @@ Agent can execute trades/DeFi on Somnia via contract.execute()
 
 - **Live Dashboard**: https://somnia-git-agent.onrender.com/dashboard
 - **Backend API**: https://somnia-git-agent.onrender.com
-- **Try the CLI** (requires installation):
+- **Try the CLI** (after publishing to npm):
   ```bash
-  npm install -g git-agent-cli
+  # Install CLI (once published to npm)
+  npm install -g git-somnia-agent
+  
+  # Set up Git alias
+  git config --global alias.somnia-agent '!git-somnia-agent'
+  
+  # Clone agent template and try commands
   git clone https://github.com/xaviersharwin10/gitAgent.git
   cd gitAgent
   git somnia-agent stats
   git somnia-agent compare main aggressive
   ```
+  
+  *Note: CLI will be published to npm as `git-somnia-agent` package. Currently install from source (see README).*
 
 [Link to 5-Minute Demo Video] (Coming Soon)
 
@@ -135,7 +143,14 @@ Agent can execute trades/DeFi on Somnia via contract.execute()
    git agent secrets set GROQ_API_KEY=your-key
    ```
 
-3. **Configure GitHub Webhook:**
+3. **Configure GitHub Integration** (Choose one):
+
+   **Option A: Automatic Setup (Vercel-like - Recommended)**
+   - Visit: `https://somnia-git-agent.onrender.com/auth/github?repo_url=YOUR_REPO_URL`
+   - Authorize GitAgent to access your repository
+   - Webhook will be automatically configured ✅
+   
+   **Option B: Manual Webhook Setup**
    - Go to your repository settings → Webhooks
    - **Payload URL**: `https://somnia-git-agent.onrender.com/webhook/github`
    - **Content type**: `application/json`

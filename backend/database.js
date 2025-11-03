@@ -98,6 +98,28 @@ function initializeDatabase() {
         console.log('✅ Metrics table created/verified');
       });
 
+      // Create github_oauth table for storing GitHub OAuth tokens
+      db.run(`
+        CREATE TABLE IF NOT EXISTS github_oauth (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id TEXT NOT NULL UNIQUE,
+          access_token TEXT NOT NULL,
+          refresh_token TEXT,
+          encrypted_token TEXT NOT NULL,
+          repo_url TEXT,
+          webhook_configured BOOLEAN DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `, (err) => {
+        if (err) {
+          console.error('Error creating github_oauth table:', err);
+          reject(err);
+          return;
+        }
+        console.log('✅ GitHub OAuth table created/verified');
+      });
+
       // Create index on agent_id for metrics table
       db.run(`
         CREATE INDEX IF NOT EXISTS idx_metrics_agent_id ON metrics(agent_id)
