@@ -152,7 +152,7 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
       AGENT_CONTRACT_ADDRESS: agent.agent_address,
       REPO_URL: agent.repo_url || '',
       BRANCH_NAME: agent.branch_name || 'main',
-      BACKEND_URL: process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 3005}`,
+      BACKEND_URL: process.env.BACKEND_URL || 'https://somnia-git-agent.onrender.com',
       SOMNIA_RPC_URL: process.env.SOMNIA_RPC_URL || 'https://dream-rpc.somnia.network',
       // We can add other default envs here
     };
