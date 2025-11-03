@@ -57,7 +57,7 @@ GitAgent solves this by mapping the agent lifecycle to the Git workflow, making 
    - All contracts deployed to Somnia testnet (`chainId: 50312`)
    - Uses Somnia RPC (`https://dream-rpc.somnia.network`)
    - Agents interact with Somnia's DeFi ecosystem
-   - **Deployed Contract**: [Add your AgentFactory address after deployment]
+   - **Deployed Contract**: [TO BE ADDED - Deploy AgentFactory.sol and add address here]
    - **Network**: Somnia Testnet (Chain ID: 50312)
 
 4. **Git → Blockchain → AI Pipeline**
@@ -86,7 +86,18 @@ Agent can execute trades/DeFi on Somnia via contract.execute()
 
 ## Live Demo
 
-[Link to 5-Minute Demo Video]
+- **Live Dashboard**: https://somnia-git-agent.onrender.com/dashboard
+- **Backend API**: https://somnia-git-agent.onrender.com
+- **Try the CLI** (requires installation):
+  ```bash
+  npm install -g git-agent-cli
+  git clone https://github.com/xaviersharwin10/gitAgent.git
+  cd gitAgent
+  git somnia-agent stats
+  git somnia-agent compare main aggressive
+  ```
+
+[Link to 5-Minute Demo Video] (Coming Soon)
 
 ## How it Was Built
 
@@ -110,7 +121,16 @@ Agent can execute trades/DeFi on Somnia via contract.execute()
 
 2. **Set up GitAgent:**
    ```bash
-   npm install -g git-agent-cli
+   # Install CLI (from source - publish to npm for easier install)
+   git clone https://github.com/xaviersharwin10/somnia-git-agent.git
+   cd somnia-git-agent/git-agent-cli
+   npm install -g .
+   
+   # Or use npm link for development
+   npm link
+   
+   # Initialize in your agent repo
+   cd ../../gitAgent  # or your agent repo
    git agent init
    git agent secrets set GROQ_API_KEY=your-key
    ```

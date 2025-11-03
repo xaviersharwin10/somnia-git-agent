@@ -4,10 +4,21 @@ This is the command-line tool for interacting with the GitAgent platform.
 
 ## Installation
 
+### Quick Install (For Users)
 ```bash
+# Install globally from GitHub
+npm install -g git-agent-cli
+
+# Or clone and install locally
+git clone https://github.com/xaviersharwin10/somnia-git-agent.git
+cd somnia-git-agent/git-agent-cli
 npm install -g .
 ```
-(For development, use `npm link` in this directory)
+
+### Development
+```bash
+npm link
+```
 
 ## Commands
 
