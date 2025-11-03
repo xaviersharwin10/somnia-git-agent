@@ -942,7 +942,7 @@ app.post('/api/agents/:id/restart', (req, res) => {
 
     try {
       const agentPath = path.join(AGENTS_DIR, agent.branch_hash);
-      await startOrReloadAgent(agent, agentPath, branch_hash);
+      await startOrReloadAgent(agent, agentPath, agent.branch_hash);
       res.json({ success: true, message: 'Agent restarted' });
     } catch (error) {
       console.error('Error restarting agent:', error);
