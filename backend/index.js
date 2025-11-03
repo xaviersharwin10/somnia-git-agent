@@ -219,24 +219,35 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
               console.warn(`Failed to delete existing process, trying reload: ${deleteErr.message}`);
               // Fallback to reload if delete fails
               pm2.reload(pm2Name, { updateEnv: true }, (reloadErr, proc) => {
+                if (reloadErr) {
+                  pm2.disconnect();
+                  db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id]);
+                  console.error(`Failed to reload agent ${agent.id}:`, reloadErr);
+                  return reject(reloadErr);
+                }
                 pm2.disconnect();
-                if (reloadErr) return reject(reloadErr);
                 const pid = proc?.[0]?.pid || existingProc.pid;
                 db.run('UPDATE agents SET status = ?, pid = ? WHERE id = ?', ['running', pid, agent.id]);
-                console.log(`Agent ${agent.id} reloaded with PID ${pid}`);
+                console.log(`✅ Agent ${agent.id} (${agent.branch_name}) reloaded with PID ${pid}`);
                 resolve(proc || existingProc);
               });
             } else {
               // Start fresh with updated env vars
               pm2.start(pm2App, (startErr, proc) => {
+                if (startErr) {
+                  pm2.disconnect();
+                  db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id]);
+                  console.error(`Failed to restart agent ${agent.id}:`, startErr);
+                  return reject(startErr);
+                }
                 pm2.disconnect();
-                if (startErr) return reject(startErr);
                 const pid = proc?.[0]?.pid;
                 if (pid) {
                   db.run('UPDATE agents SET status = ?, pid = ? WHERE id = ?', ['running', pid, agent.id]);
-                  console.log(`Agent ${agent.id} restarted with PID ${pid} (with updated env vars)`);
+                  console.log(`✅ Agent ${agent.id} (${agent.branch_name}) restarted with PID ${pid} (with updated env vars)`);
                 } else {
-                  console.warn(`Agent ${agent.id} restarted but PID not available`);
+                  db.run('UPDATE agents SET status = ? WHERE id = ?', ['running', agent.id]);
+                  console.log(`✅ Agent ${agent.id} (${agent.branch_name}) restarted (PID not available)`);
                 }
                 resolve(proc);
               });
@@ -245,16 +256,24 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
         } else {
           // App not found, start it
           pm2.start(pm2App, (startErr, proc) => {
+            if (startErr) {
+              pm2.disconnect();
+              // Update status to error if start fails
+              db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id]);
+              console.error(`Failed to start agent ${agent.id}:`, startErr);
+              return reject(startErr);
+            }
             pm2.disconnect();
-            if (startErr) return reject(startErr);
-
-            // Update DB with pid
+            
+            // Update DB with pid and status
             const pid = proc?.[0]?.pid;
             if (pid) {
               db.run('UPDATE agents SET status = ?, pid = ? WHERE id = ?', ['running', pid, agent.id]);
-              console.log(`Agent ${agent.id} started with PID ${pid}`);
+              console.log(`✅ Agent ${agent.id} (${agent.branch_name}) started with PID ${pid}`);
             } else {
-              console.warn(`Agent ${agent.id} started but PID not available`);
+              // Even without PID, mark as running if PM2 says it started
+              db.run('UPDATE agents SET status = ? WHERE id = ?', ['running', agent.id]);
+              console.log(`✅ Agent ${agent.id} (${agent.branch_name}) started (PID not available)`);
             }
             resolve(proc);
           });
