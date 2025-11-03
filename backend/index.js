@@ -1032,7 +1032,7 @@ app.get('/dashboard', (req, res) => {
 });
 
 // Metrics endpoint - Agents can post their decisions/transactions here
-app.post('/api/metrics', (req, res) => {
+app.post('/api/metrics', async (req, res) => {
   const { repo_url, branch_name, decision, price, trade_executed, trade_tx_hash, trade_amount } = req.body;
 
   if (!repo_url || !branch_name || !decision) {
@@ -1043,16 +1043,57 @@ app.post('/api/metrics', (req, res) => {
 
   try {
     // Find the agent in the DB
-    db.get('SELECT id FROM agents WHERE branch_hash = ?', [branch_hash], (err, agent) => {
+    db.get('SELECT id FROM agents WHERE branch_hash = ?', [branch_hash], async (err, agent) => {
       if (err) {
         console.error('Database error:', err);
         return res.status(500).json({ error: 'Database error' });
       }
+      
+      // If agent doesn't exist, try to find it on-chain and create DB entry
       if (!agent) {
-        return res.status(404).json({ error: 'Agent not found' });
+        console.log(`Agent ${branch_hash} not found in DB, checking blockchain...`);
+        try {
+          const { agentFactoryContract: factoryContract } = getEthersSetup();
+          const agentAddress = await factoryContract.agents(branch_hash);
+          
+          if (agentAddress && agentAddress !== ethers.ZeroAddress && agentAddress !== "0x0000000000000000000000000000000000000000") {
+            console.log(`Agent found on-chain at ${agentAddress}, creating DB entry...`);
+            // Create agent entry in database
+            db.run(
+              'INSERT INTO agents (repo_url, branch_name, branch_hash, agent_address, status) VALUES (?, ?, ?, ?, ?)',
+              [repo_url, branch_name, branch_hash, agentAddress, 'running'],
+              function (err) {
+                if (err) {
+                  console.error('Error creating agent entry:', err);
+                  return res.status(500).json({ error: 'Failed to create agent entry' });
+                }
+                
+                // Now save the metric
+                db.run(
+                  'INSERT INTO metrics (agent_id, decision, price, trade_executed, trade_tx_hash, trade_amount) VALUES (?, ?, ?, ?, ?, ?)',
+                  [this.lastID, decision, price || null, trade_executed ? 1 : 0, trade_tx_hash || null, trade_amount || null],
+                  function (err) {
+                    if (err) {
+                      console.error('Error inserting metric:', err);
+                      return res.status(500).json({ error: 'Failed to save metric' });
+                    }
+                    res.status(201).json({ success: true, metric_id: this.lastID });
+                  }
+                );
+              }
+            );
+          } else {
+            console.log(`Agent ${branch_hash} not found on-chain either`);
+            return res.status(404).json({ error: 'Agent not found. Please deploy agent first via webhook.' });
+          }
+        } catch (blockchainError) {
+          console.error('Error checking blockchain:', blockchainError);
+          return res.status(500).json({ error: 'Failed to check blockchain for agent' });
+        }
+        return; // Exit early, response will be sent in callback
       }
 
-      // Insert metric
+      // Agent exists, insert metric normally
       db.run(
         'INSERT INTO metrics (agent_id, decision, price, trade_executed, trade_tx_hash, trade_amount) VALUES (?, ?, ?, ?, ?, ?)',
         [agent.id, decision, price || null, trade_executed ? 1 : 0, trade_tx_hash || null, trade_amount || null],
