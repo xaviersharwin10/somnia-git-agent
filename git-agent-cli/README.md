@@ -1,18 +1,33 @@
-# GitAgent CLI
+# GitAgent CLI for Somnia
 
-This is the command-line tool for interacting with the GitAgent platform.
+**Built for the Somnia AI Hackathon** - Command-line tool for interacting with the GitAgent platform on Somnia blockchain.
+
+GitAgent makes deploying AI agents on Somnia as simple as `git push`. This CLI lets you manage your Somnia agents directly from the command line.
 
 ## Installation
 
 ### Quick Install (For Users)
-```bash
-# Install globally from GitHub
-npm install -g git-agent-cli
 
-# Or clone and install locally
+**Option 1: Install from npm (Recommended - after publishing)**
+```bash
+npm install -g git-somnia-agent
+
+# Set up Git alias to use as 'git somnia-agent'
+git config --global alias.somnia-agent '!git-somnia-agent'
+
+# Then use:
+git somnia-agent stats
+git somnia-agent compare main aggressive
+```
+
+**Option 2: Install from GitHub (Current)**
+```bash
 git clone https://github.com/xaviersharwin10/somnia-git-agent.git
 cd somnia-git-agent/git-agent-cli
 npm install -g .
+
+# Set up Git alias
+git config --global alias.somnia-agent '!git-somnia-agent'
 ```
 
 ### Development
@@ -22,55 +37,75 @@ npm link
 
 ## Commands
 
-* `git agent init` - Initialize GitAgent in a repo.
-* `git agent secrets set <KEY=VALUE>` - Set a secret for the current branch.
-* `git agent stats` - Get real-time stats for the current branch's agent.
-* `git agent logs` - Get the last 50 lines of agent logs.
-* `git agent compare <branch1> <branch2>` - Compare performance between two branches.
+* `git somnia-agent init` - Initialize GitAgent in your repository.
+* `git somnia-agent secrets set <KEY=VALUE>` - Set a secret for the current branch (e.g., `GROQ_API_KEY=sk-...`).
+* `git somnia-agent stats` - Get real-time stats for the current branch's agent on Somnia.
+* `git somnia-agent logs` - Get the last 50 lines of agent logs.
+* `git somnia-agent compare <branch1> <branch2>` - Compare performance between two agent branches.
+
+**Note**: After installing, you need to set up the Git alias once:
+```bash
+git config --global alias.somnia-agent '!git-somnia-agent'
+```
+
+Then you can use `git somnia-agent` as shown above.
 
 ## Features
 
 - 🚀 **Easy Initialization**: Interactive setup with sensible defaults
-- 🔐 **Secure Secrets**: Encrypted secret storage per branch
-- 📊 **Real-time Monitoring**: Live stats and logs from running agents
-- 🔄 **Branch Comparison**: Side-by-side performance comparison
+- 🔐 **Secure Secrets**: Encrypted secret storage per branch for Somnia agents
+- 📊 **Real-time Monitoring**: Live stats and logs from agents running on Somnia
+- 🔄 **Branch Comparison**: Side-by-side performance comparison for A/B testing
+- ⛓️ **Somnia Integration**: Works with agents deployed on Somnia testnet
 - 🎨 **Beautiful Output**: Color-coded messages and clear feedback
 - ⚡ **Fast**: Lightweight and responsive CLI experience
+
+## Somnia Blockchain Integration
+
+This CLI works with GitAgent platform that deploys AI agents as smart contracts on **Somnia testnet**:
+- Each agent branch = separate smart contract on Somnia
+- Agents can execute trades on Somnia DEXs
+- On-chain agent registry via AgentFactory contract
+- Full blockchain integration for autonomous agents
 
 ## Usage
 
 ### Initialize a Repository
 
 ```bash
-git agent init
+git somnia-agent init
 ```
 
 This will:
 - Create a `.gitagent.json` file in your repository
 - Prompt for your GitHub repository URL
-- Provide next steps for deployment
+- Provide next steps for deployment to Somnia
 
 ### Set Secrets
 
 ```bash
-git agent secrets set GROQ_API_KEY=sk-your-key-here
-git agent secrets set AI_PROMPT="You are an aggressive trader"
+git somnia-agent secrets set GROQ_API_KEY=sk-your-key-here
+git somnia-agent secrets set AGENT_PRIVATE_KEY=0x...
+git somnia-agent secrets set AI_PROMPT="You are an aggressive trader"
 ```
 
-Secrets are encrypted and stored securely for the current branch.
+Secrets are encrypted and stored securely for the current branch. These are injected into your agent when deployed on Somnia.
 
 ### Get Agent Information
 
 ```bash
-git agent stats    # Get performance stats
-git agent logs     # Get agent logs
+git somnia-agent stats    # Get performance stats from Somnia agents
+git somnia-agent logs     # Get agent logs
 ```
 
 ### Compare Branches
 
+Compare different agent strategies deployed on Somnia:
 ```bash
-git agent compare main feature-branch
+git somnia-agent compare main aggressive
 ```
+
+This shows side-by-side comparison of agent performance metrics.
 
 ## Configuration
 
@@ -88,23 +123,22 @@ To test the CLI locally:
 
 ```bash
 npm link
-git agent --help
+git somnia-agent --help
 ```
 
-## Features
+## About Somnia AI Hackathon
 
-- 🚀 **Easy Initialization**: Interactive setup with sensible defaults
-- 🔐 **Secure Secrets**: Encrypted secret storage per branch
-- 📊 **Agent Monitoring**: Stats and logs for deployed agents
-- 🔄 **Branch Comparison**: Compare performance across branches
-- 🎨 **Beautiful Output**: Color-coded messages and clear feedback
-- ⚡ **Fast**: Lightweight and responsive CLI experience
+This CLI is part of **GitAgent** - an infrastructure project for the Somnia AI Hackathon that makes deploying AI agents on Somnia blockchain as simple as `git push`.
+
+**Track**: Infra Agents  
+**Repository**: https://github.com/xaviersharwin10/somnia-git-agent  
+**Live Dashboard**: https://somnia-git-agent.onrender.com/dashboard
 
 ## Requirements
 
 - Node.js 16+
 - Git repository
-- GitAgent backend running (for full functionality)
+- GitAgent backend (production: https://somnia-git-agent.onrender.com)
 
 
 
