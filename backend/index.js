@@ -1806,8 +1806,8 @@ async function recoverAgentsFromBlockchain() {
               } else {
                 console.log(`ℹ️ Agent ${agentInfo.branch_name} directory/clone failed, will start on next push`);
               }
-            } catch (startError) {
-              console.warn(`⚠️ Could not start recovered agent ${agentInfo.branch_name}:`, startError.message);
+            } catch (error) {
+              console.warn(`⚠️ Could not recover/start agent ${agentInfo.branch_name}:`, error.message);
             }
             
             recovered++;
