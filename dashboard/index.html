@@ -604,6 +604,116 @@
             border-radius: 10px;
         }
 
+        /* Trades Container */
+        .trades-container {
+            background: #0a0e27;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 20px;
+            max-height: 450px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-primary) transparent;
+        }
+
+        .trades-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .trades-container::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 10px;
+        }
+
+        .trade-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .trade-item:hover {
+            border-color: var(--accent-primary);
+            transform: translateX(4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .trade-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .trade-info {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .trade-decision {
+            font-weight: 600;
+            color: var(--accent-success);
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .trade-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .trade-price {
+            color: var(--accent-cyan);
+            font-weight: 500;
+        }
+
+        .trade-amount {
+            color: var(--text-muted);
+        }
+
+        .trade-tx {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .trade-tx-hash {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: var(--accent-primary);
+            background: rgba(139, 92, 246, 0.1);
+            padding: 4px 8px;
+            border-radius: 6px;
+            word-break: break-all;
+        }
+
+        .trade-tx-link {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.2s ease;
+        }
+
+        .trade-tx-link:hover {
+            color: var(--accent-secondary);
+        }
+
+        .trade-timestamp {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
         .log-entry {
             margin-bottom: 6px;
             padding: 4px 0;
@@ -889,6 +999,27 @@
                 </div>
             </div>
 
+            <!-- Recent Trades Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span class="card-title-icon">💸</span>
+                        Recent Trades
+                    </h2>
+                </div>
+
+                <div class="trades-container" id="tradesContainer">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💼</div>
+                        <div>Select an agent to view executed trades</div>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="loadTrades()" style="margin-top: 16px;">
+                    🔄 Refresh Trades
+                </button>
+            </div>
+
             <!-- Live Logs Card -->
             <div class="card">
                 <div class="card-header">
@@ -1112,6 +1243,7 @@
             selectedAgentId = branchHash;
             loadLogs();
             loadStats();
+            loadTrades();
             
             // Update visual selection
             document.querySelectorAll('.agent-item').forEach(item => {

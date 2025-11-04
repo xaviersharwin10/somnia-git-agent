@@ -2026,6 +2026,44 @@ app.get('/api/metrics/:branch_hash', (req, res) => {
 });
 
 // Get stats for an agent (aggregated metrics)
+// Get recent trades for an agent
+app.get('/api/trades/:branch_hash', (req, res) => {
+  const { branch_hash } = req.params;
+  
+  if (!branch_hash) {
+    return res.status(400).json({ error: 'Branch hash required' });
+  }
+  
+  db.get('SELECT id FROM agents WHERE branch_hash = ?', [branch_hash], (err, agent) => {
+    if (err) {
+      console.error('Error fetching agent:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+    
+    // Get only executed trades
+    db.all(
+      `SELECT decision, price, timestamp, trade_tx_hash, trade_amount 
+       FROM metrics 
+       WHERE agent_id = ? AND trade_executed = 1 AND trade_tx_hash IS NOT NULL 
+       ORDER BY timestamp DESC 
+       LIMIT 50`,
+      [agent.id],
+      (metricsErr, trades) => {
+        if (metricsErr) {
+          console.error('Error fetching trades:', metricsErr);
+          return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json({ trades: trades || [] });
+      }
+    );
+  });
+});
+
 app.get('/api/stats/:branch_hash', (req, res) => {
   const { branch_hash } = req.params;
 
