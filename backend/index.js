@@ -448,16 +448,74 @@ app.get('/auth/github/callback', async (req, res) => {
     // Auto-configure webhook if repo URL is known
     if (targetRepoUrl) {
       try {
-        // Extract owner/repo from URL (e.g., https://github.com/owner/repo.git)
-        const match = targetRepoUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
+        // Extract owner/repo from URL (e.g., https://github.com/owner/repo.git or https://github.com/owner/repo)
+        const match = targetRepoUrl.match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/);
         if (match) {
           const [, owner, repo] = match;
+          const repoName = repo.replace(/\.git$/, ''); // Remove .git if present
+          
+          console.log(`[OAuth] Attempting to set up webhook for ${owner}/${repoName}`);
+          
+          // First, verify the repo exists and user has access
+          let repoInfo;
+          try {
+            repoInfo = await axios.get(
+              `https://api.github.com/repos/${owner}/${repoName}`,
+              { headers: { 'Authorization': `token ${access_token}` } }
+            );
+            console.log(`[OAuth] ✅ Repo exists: ${repoName} (${repoInfo.data.private ? 'private' : 'public'})`);
+          } catch (repoError) {
+            if (repoError.response?.status === 404) {
+              console.error(`[OAuth] ❌ Repo not found or no access: ${owner}/${repoName}`);
+              return res.send(`
+                <h1>⚠️ Repository Not Found</h1>
+                <p>Could not access repository <strong>${owner}/${repoName}</strong></p>
+                <p><strong>Possible reasons:</strong></p>
+                <ul>
+                  <li>Repository doesn't exist</li>
+                  <li>You don't have access to this repository</li>
+                  <li>Repository is private and OAuth token doesn't have access</li>
+                </ul>
+                <p><strong>Solution:</strong></p>
+                <p>1. Make sure the repository URL is correct</p>
+                <p>2. Ensure you're the owner or have admin access</p>
+                <p>3. For private repos, ensure the OAuth app has access</p>
+                <hr>
+                <p><a href="/auth/github?repo_url=${encodeURIComponent(targetRepoUrl)}">Try Again</a> | <a href="/">Home</a></p>
+              `);
+            }
+            throw repoError;
+          }
           
           // Check if webhook already exists
-          const existingWebhooks = await axios.get(
-            `https://api.github.com/repos/${owner}/${repo}/hooks`,
-            { headers: { 'Authorization': `token ${access_token}` } }
-          );
+          let existingWebhooks;
+          try {
+            existingWebhooks = await axios.get(
+              `https://api.github.com/repos/${owner}/${repoName}/hooks`,
+              { headers: { 'Authorization': `token ${access_token}` } }
+            );
+          } catch (hooksError) {
+            if (hooksError.response?.status === 403) {
+              console.error(`[OAuth] ❌ No permission to manage webhooks for ${owner}/${repoName}`);
+              return res.send(`
+                <h1>⚠️ Permission Denied</h1>
+                <p>You don't have permission to manage webhooks for <strong>${owner}/${repoName}</strong></p>
+                <p><strong>You need admin access to the repository to set up webhooks.</strong></p>
+                <p><strong>Solution:</strong></p>
+                <p>1. Make sure you're the repository owner, or</p>
+                <p>2. Ask the owner to add you as a collaborator with admin access, or</p>
+                <p>3. Set up the webhook manually in GitHub Settings → Webhooks</p>
+                <hr>
+                <p><strong>Manual Setup:</strong></p>
+                <p>Go to: <code>https://github.com/${owner}/${repoName}/settings/hooks</code></p>
+                <p>Add webhook URL: <code>https://somnia-git-agent.onrender.com/webhook/github</code></p>
+                <p>Events: Just the push event</p>
+                <hr>
+                <p><a href="/">Home</a> | <a href="/dashboard">Dashboard</a></p>
+              `);
+            }
+            throw hooksError;
+          }
 
           const webhookUrl = `${BACKEND_URL}/webhook/github`;
           const webhookExists = existingWebhooks.data.some(
@@ -466,21 +524,40 @@ app.get('/auth/github/callback', async (req, res) => {
 
           if (!webhookExists) {
             // Create webhook
-            await axios.post(
-              `https://api.github.com/repos/${owner}/${repo}/hooks`,
-              {
-                name: 'web',
-                active: true,
-                events: ['push'],
-                config: {
-                  url: webhookUrl,
-                  content_type: 'json',
-                  secret: WEBHOOK_SECRET,
-                  insecure_ssl: '0'
-                }
-              },
-              { headers: { 'Authorization': `token ${access_token}` } }
-            );
+            try {
+              await axios.post(
+                `https://api.github.com/repos/${owner}/${repoName}/hooks`,
+                {
+                  name: 'web',
+                  active: true,
+                  events: ['push'],
+                  config: {
+                    url: webhookUrl,
+                    content_type: 'json',
+                    secret: WEBHOOK_SECRET,
+                    insecure_ssl: '0'
+                  }
+                },
+                { headers: { 'Authorization': `token ${access_token}` } }
+              );
+              console.log(`[OAuth] ✅ Webhook created successfully for ${owner}/${repoName}`);
+            } catch (createError) {
+              if (createError.response?.status === 403) {
+                return res.send(`
+                  <h1>⚠️ Permission Denied</h1>
+                  <p>Could not create webhook for <strong>${owner}/${repoName}</strong></p>
+                  <p><strong>You need admin access to create webhooks.</strong></p>
+                  <p><strong>Manual Setup:</strong></p>
+                  <p>Go to: <code>https://github.com/${owner}/${repoName}/settings/hooks</code></p>
+                  <p>Add webhook URL: <code>${webhookUrl}</code></p>
+                  <p>Content type: <code>application/json</code></p>
+                  <p>Events: <code>Just the push event</code></p>
+                  <hr>
+                  <p><a href="/">Home</a> | <a href="/dashboard">Dashboard</a></p>
+                `);
+              }
+              throw createError;
+            }
 
             // Update DB
             await new Promise((resolve, reject) => {
@@ -494,7 +571,7 @@ app.get('/auth/github/callback', async (req, res) => {
             res.send(`
               <h1>✅ Successfully Connected!</h1>
               <p>GitHub OAuth authorized for <strong>${userId}</strong></p>
-              <p>✅ Webhook automatically configured for <strong>${owner}/${repo}</strong></p>
+              <p>✅ Webhook automatically configured for <strong>${owner}/${repoName}</strong></p>
               <p>Now you can <code>git push</code> and deployments will trigger automatically!</p>
               <hr>
               <p><a href="/dashboard">View Dashboard</a> | <a href="/auth/github?repo_url=${encodeURIComponent(targetRepoUrl)}">Configure Another Repo</a></p>
@@ -504,17 +581,43 @@ app.get('/auth/github/callback', async (req, res) => {
             res.send(`
               <h1>✅ Successfully Connected!</h1>
               <p>GitHub OAuth authorized for <strong>${userId}</strong></p>
-              <p>ℹ️ Webhook already exists for <strong>${owner}/${repo}</strong></p>
+              <p>ℹ️ Webhook already exists for <strong>${owner}/${repoName}</strong></p>
               <p>You're all set! Just <code>git push</code> to deploy.</p>
               <hr>
               <p><a href="/dashboard">View Dashboard</a></p>
             `);
             return;
           }
+        } else {
+          console.error(`[OAuth] Could not parse repo URL: ${targetRepoUrl}`);
+          return res.send(`
+            <h1>⚠️ Invalid Repository URL</h1>
+            <p>Could not parse repository URL: <strong>${targetRepoUrl}</strong></p>
+            <p><strong>Please use format:</strong> <code>https://github.com/owner/repo.git</code> or <code>https://github.com/owner/repo</code></p>
+            <hr>
+            <p><a href="/">Try Again</a></p>
+          `);
         }
       } catch (webhookError) {
         console.error('Error setting up webhook:', webhookError.response?.data || webhookError.message);
-        // Continue even if webhook setup fails
+        
+        // Show user-friendly error message
+        const errorData = webhookError.response?.data || {};
+        const errorMessage = errorData.message || webhookError.message;
+        
+        return res.send(`
+          <h1>⚠️ Error Setting Up Webhook</h1>
+          <p><strong>Error:</strong> ${errorMessage}</p>
+          <p><strong>Status:</strong> ${webhookError.response?.status || 'Unknown'}</p>
+          <hr>
+          <p><strong>You can still set up the webhook manually:</strong></p>
+          <p>1. Go to your repository settings: <code>GitHub → Settings → Webhooks</code></p>
+          <p>2. Add webhook URL: <code>https://somnia-git-agent.onrender.com/webhook/github</code></p>
+          <p>3. Content type: <code>application/json</code></p>
+          <p>4. Events: <code>Just the push event</code></p>
+          <hr>
+          <p><a href="/">Home</a> | <a href="/dashboard">Dashboard</a></p>
+        `);
       }
     }
 
