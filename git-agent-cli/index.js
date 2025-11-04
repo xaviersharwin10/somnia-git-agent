@@ -102,10 +102,40 @@ program
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
 
     console.log(chalk.green(`✅ ${CONFIG_FILE} created.`));
-    console.log('Next steps:');
-    console.log(`  1. Add your backend webhook to your GitHub repo settings.`);
-    console.log(`  2. Set your secrets: ${chalk.cyan('git agent secrets set GROQ_API_KEY=...')}`);
-    console.log(`  3. ${chalk.cyan('git push')} to deploy!`);
+    console.log('');
+    console.log(chalk.bold('📋 Next Steps:'));
+    console.log('');
+    
+    // Show OAuth URL for automatic setup
+    const repoUrl = answers.repo_url;
+    const oauthUrl = `https://somnia-git-agent.onrender.com/auth/github?repo_url=${encodeURIComponent(repoUrl)}`;
+    
+    console.log(chalk.cyan('🚀 Option A: Automatic Webhook Setup (Recommended)'));
+    console.log(`   Visit: ${chalk.underline(oauthUrl)}`);
+    console.log(`   This will automatically configure the webhook for you!`);
+    console.log('');
+    
+    console.log(chalk.yellow('⚙️  Option B: Manual Webhook Setup'));
+    console.log(`   Go to: GitHub → ${answers.repo_url.split('/').slice(-2).join('/')} → Settings → Webhooks`);
+    console.log(`   Payload URL: ${chalk.cyan('https://somnia-git-agent.onrender.com/webhook/github')}`);
+    console.log(`   Content type: application/json`);
+    console.log(`   Events: Just the push event`);
+    console.log('');
+    
+    console.log(chalk.bold('🔐 Set your secrets:'));
+    console.log(`   ${chalk.cyan('git somnia-agent secrets set GROQ_API_KEY=your-key-here')}`);
+    console.log(`   ${chalk.cyan('git somnia-agent secrets set AGENT_PRIVATE_KEY=0x...')}`);
+    console.log('');
+    
+    console.log(chalk.bold('🚀 Deploy:'));
+    console.log(`   ${chalk.cyan('git push origin main')}`);
+    console.log(`   This will automatically deploy your agent on Somnia blockchain!`);
+    console.log('');
+    
+    console.log(chalk.bold('📊 Monitor:'));
+    console.log(`   ${chalk.cyan('git somnia-agent stats')} - View agent metrics`);
+    console.log(`   ${chalk.cyan('git somnia-agent logs')} - View agent logs`);
+    console.log(`   Dashboard: ${chalk.underline('https://somnia-git-agent.onrender.com/dashboard')}`);
   });
 
 /**

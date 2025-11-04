@@ -704,6 +704,7 @@ app.post('/webhook/github', (req, res) => {
               throw new Error("Agent address not found after registration.");
             }
             console.log(`✅ Agent contract found/deployed at: ${agentAddress}`);
+            console.log(`🔗 Explorer: https://shannon-explorer.somnia.network/address/${agentAddress}`);
 
             const dirExists = fs.existsSync(agentPath);
             if (dirExists) {
@@ -964,6 +965,7 @@ app.post('/webhook/github/push', async (req, res) => {
               throw new Error("Agent address not found after registration. Transaction may have failed.");
             }
             console.log(`✅ Agent contract found/deployed at: ${agentAddress}`);
+            console.log(`🔗 Explorer: https://shannon-explorer.somnia.network/address/${agentAddress}`);
 
             // 2c. Clone or pull code (check if directory exists)
             const dirExists = fs.existsSync(agentPath);
@@ -1100,7 +1102,12 @@ app.post('/api/agents/manual-trigger', async (req, res) => {
       }
 
       if (agent) {
-        return res.json({ message: 'Agent already exists', agent });
+        const explorerUrl = agent.agent_address ? `https://shannon-explorer.somnia.network/address/${agent.agent_address}` : null;
+        return res.json({ 
+          message: 'Agent already exists', 
+          agent,
+          explorer_url: explorerUrl
+        });
       }
 
       // Process deployment (simplified version)
@@ -1147,7 +1154,17 @@ app.post('/api/agents/manual-trigger', async (req, res) => {
         };
         await startOrReloadAgent(newAgent, agentPath, branch_hash);
 
-        res.json({ success: true, agent_id: newAgentId, agent_address: agentAddress });
+        // Return detailed response with explorer link
+        const explorerUrl = `https://shannon-explorer.somnia.network/address/${agentAddress}`;
+        res.json({ 
+          success: true, 
+          agent_id: newAgentId, 
+          agent_address: agentAddress,
+          explorer_url: explorerUrl,
+          message: `Agent deployed! Contract address: ${agentAddress}`,
+          branch_name: branch_name,
+          repo_url: repo_url
+        });
       } catch (error) {
         console.error('Manual trigger error:', error);
         res.status(500).json({ error: error.message });
@@ -1538,6 +1555,16 @@ app.get('/api/logs/:repo_url/:branch_name', (req, res) => {
   const branch_hash = ethers.id(repo_url + "/" + branch_name);
   // Redirect to new endpoint
   res.redirect(`/api/logs/${branch_hash}`);
+});
+
+// Serve landing page
+app.get('/', (req, res) => {
+  const landingPath = path.join(__dirname, 'landing.html');
+  if (fs.existsSync(landingPath)) {
+    res.sendFile(landingPath);
+  } else {
+    res.redirect('/dashboard');
+  }
 });
 
 // Serve dashboard

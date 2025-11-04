@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitAgent - Deploy AI Agents on Somnia with Git Push</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #141b3a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 20px;
+            color: #94a3b8;
+            margin-bottom: 32px;
+        }
+
+        .tagline {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #a5b4fc;
+        }
+
+        .card {
+            background: rgba(26, 35, 66, 0.8);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            color: #6366f1;
+        }
+
+        .oauth-form {
+            margin-top: 24px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 14px;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        .quick-link {
+            padding: 20px;
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            text-align: center;
+            text-decoration: none;
+            color: #ffffff;
+            transition: all 0.2s;
+        }
+
+        .quick-link:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: #6366f1;
+            transform: translateY(-2px);
+        }
+
+        .quick-link h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #6366f1;
+        }
+
+        .quick-link p {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            color: #a5b4fc;
+        }
+
+        .step {
+            margin-bottom: 24px;
+            padding-left: 24px;
+            border-left: 2px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .step-number {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-weight: 600;
+            margin-right: 12px;
+            margin-left: -40px;
+        }
+
+        .alert {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            color: #a5b4fc;
+            font-size: 14px;
+        }
+
+        .alert strong {
+            color: #6366f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 GitAgent</h1>
+            <p>Deploy AI Agents on Somnia with Git Push</p>
+            <span class="tagline">git push = on-chain agent deployment</span>
+        </div>
+
+        <div class="card">
+            <h2>🚀 Quick Setup (Automatic Webhook)</h2>
+            <p style="color: #94a3b8; margin-bottom: 24px;">
+                Authorize GitHub to automatically configure webhooks. No manual setup needed!
+            </p>
+            
+            <div class="oauth-form">
+                <div class="input-group">
+                    <label for="repo-url">Your GitHub Repository URL</label>
+                    <input 
+                        type="text" 
+                        id="repo-url" 
+                        placeholder="https://github.com/username/repo.git"
+                        value=""
+                    >
+                </div>
+                <button class="btn" onclick="authorizeGitHub()">
+                    🔐 Authorize GitHub & Setup Webhook
+                </button>
+            </div>
+
+            <div class="alert" style="margin-top: 24px;">
+                <strong>💡 Tip:</strong> After authorization, just <code>git push</code> to deploy your agent automatically!
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📋 Quick Start Guide</h2>
+            
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Install CLI</strong>
+                <div class="code-block">
+                    <code>npm install -g git-somnia-agent<br>
+git config --global alias.somnia-agent '!git-somnia-agent'</code>
+                </div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Initialize Repository</strong>
+                <div class="code-block">
+                    <code>cd your-agent-repo<br>
+git somnia-agent init<br>
+git somnia-agent secrets set GROQ_API_KEY=your-key</code>
+                </div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>Authorize GitHub (Above) or Manual Webhook</strong>
+                <div class="code-block">
+                    <code>Manual: GitHub → Settings → Webhooks → Add webhook<br>
+URL: https://somnia-git-agent.onrender.com/webhook/github<br>
+Events: Just the push event</code>
+                </div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">4</span>
+                <strong>Deploy</strong>
+                <div class="code-block">
+                    <code>git push origin main</code>
+                </div>
+                <p style="color: #94a3b8; margin-top: 8px; font-size: 14px;">
+                    This automatically deploys an Agent.sol contract on Somnia and starts your agent!
+                </p>
+            </div>
+        </div>
+
+        <div class="quick-links">
+            <a href="/dashboard" class="quick-link">
+                <h3>📊 Dashboard</h3>
+                <p>View live agent metrics</p>
+            </a>
+            <a href="/health" class="quick-link">
+                <h3>💚 Health Check</h3>
+                <p>API status</p>
+            </a>
+            <a href="https://github.com/xaviersharwin10/somnia-git-agent" target="_blank" class="quick-link">
+                <h3>📚 Documentation</h3>
+                <p>Full setup guide</p>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function authorizeGitHub() {
+            const repoUrl = document.getElementById('repo-url').value.trim();
+            
+            if (!repoUrl) {
+                alert('Please enter your GitHub repository URL');
+                return;
+            }
+
+            // Validate GitHub URL format
+            if (!repoUrl.includes('github.com') && !repoUrl.includes('.git')) {
+                if (confirm('URL should be like https://github.com/user/repo.git\n\nUse this URL anyway?')) {
+                    window.location.href = `/auth/github?repo_url=${encodeURIComponent(repoUrl)}`;
+                }
+            } else {
+                window.location.href = `/auth/github?repo_url=${encodeURIComponent(repoUrl)}`;
+            }
+        }
+
+        // Auto-fill from URL params if present
+        const urlParams = new URLSearchParams(window.location.search);
+        const repoParam = urlParams.get('repo_url');
+        if (repoParam) {
+            document.getElementById('repo-url').value = repoParam;
+        }
+    </script>
+</body>
+</html>
+
