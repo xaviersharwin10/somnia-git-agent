@@ -729,6 +729,12 @@ app.post('/webhook/github', (req, res) => {
   const deliveryId = req.headers['x-github-delivery'];
   console.log(`Delivery ID: ${deliveryId}`);
   
+  // Handle ping events (GitHub sends this when webhook is created/tested)
+  if (eventType === 'ping') {
+    console.log('✅ Webhook ping received - webhook is working correctly');
+    return res.status(200).json({ message: 'Webhook ping received', status: 'ok' });
+  }
+  
   // If it's a push event, forward to the push handler (which does deployment)
   if (eventType === 'push') {
     // Forward to push handler - we'll import the handler logic
@@ -1007,6 +1013,15 @@ app.post('/webhook/github/push', async (req, res) => {
   };
 
   try {
+    // Check event type from headers
+    const eventType = req.headers['x-github-event'];
+    
+    // Handle ping events (GitHub sends this when webhook is created/tested)
+    if (eventType === 'ping') {
+      console.log('✅ Webhook ping received - webhook is working correctly');
+      return sendResponse(200, JSON.stringify({ message: 'Webhook ping received', status: 'ok' }));
+    }
+    
     // Validate required fields
     if (!req.body.repository || !req.body.repository.clone_url) {
       console.error('Error: Missing repository information in webhook payload');
@@ -1015,7 +1030,8 @@ app.post('/webhook/github/push', async (req, res) => {
 
     if (!req.body.ref) {
       console.error('Error: Missing ref information in webhook payload');
-      return sendResponse(400, 'Missing ref information');
+      console.error('Webhook payload:', JSON.stringify(req.body, null, 2));
+      return sendResponse(400, 'Missing ref information - this might be a non-push event');
     }
 
     const repo_url = req.body.repository.clone_url;
