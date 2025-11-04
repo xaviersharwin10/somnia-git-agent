@@ -15,7 +15,11 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #141b3a 100%);
+            background: #0a0a1a;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
             color: #ffffff;
             min-height: 100vh;
             padding: 40px 20px;
@@ -36,7 +40,7 @@
             font-size: 48px;
             font-weight: 700;
             margin-bottom: 16px;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #06b6d4 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -44,33 +48,34 @@
 
         .header p {
             font-size: 20px;
-            color: #94a3b8;
+            color: #a5b4fc;
             margin-bottom: 32px;
         }
 
         .tagline {
             display: inline-block;
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.3);
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.4);
             padding: 8px 20px;
             border-radius: 20px;
             font-size: 14px;
-            color: #a5b4fc;
+            color: #c4b5fd;
         }
 
         .card {
-            background: rgba(26, 35, 66, 0.8);
-            border: 1px solid rgba(99, 102, 241, 0.2);
+            background: rgba(21, 24, 46, 0.85);
+            border: 1px solid rgba(139, 92, 246, 0.25);
             border-radius: 16px;
             padding: 32px;
             margin-bottom: 24px;
             backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
         }
 
         .card h2 {
             font-size: 24px;
             margin-bottom: 16px;
-            color: #6366f1;
+            color: #8b5cf6;
         }
 
         .oauth-form {
@@ -84,7 +89,7 @@
         .input-group label {
             display: block;
             margin-bottom: 8px;
-            color: #94a3b8;
+            color: #a5b4fc;
             font-size: 14px;
         }
 
@@ -92,7 +97,7 @@
             width: 100%;
             padding: 12px 16px;
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(99, 102, 241, 0.3);
+            border: 1px solid rgba(139, 92, 246, 0.3);
             border-radius: 8px;
             color: #ffffff;
             font-size: 14px;
@@ -101,14 +106,14 @@
 
         .input-group input:focus {
             outline: none;
-            border-color: #6366f1;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
         }
 
         .btn {
             display: inline-block;
             padding: 12px 32px;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #06b6d4 100%);
             color: #ffffff;
             border: none;
             border-radius: 8px;
@@ -122,16 +127,16 @@
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.5);
         }
 
         .btn-secondary {
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.3);
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.4);
         }
 
         .btn-secondary:hover {
-            background: rgba(99, 102, 241, 0.2);
+            background: rgba(139, 92, 246, 0.25);
         }
 
         .quick-links {
@@ -143,8 +148,8 @@
 
         .quick-link {
             padding: 20px;
-            background: rgba(99, 102, 241, 0.05);
-            border: 1px solid rgba(99, 102, 241, 0.2);
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.25);
             border-radius: 12px;
             text-align: center;
             text-decoration: none;
@@ -153,25 +158,26 @@
         }
 
         .quick-link:hover {
-            background: rgba(99, 102, 241, 0.1);
-            border-color: #6366f1;
+            background: rgba(139, 92, 246, 0.15);
+            border-color: #8b5cf6;
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
         }
 
         .quick-link h3 {
             font-size: 18px;
             margin-bottom: 8px;
-            color: #6366f1;
+            color: #8b5cf6;
         }
 
         .quick-link p {
             font-size: 14px;
-            color: #94a3b8;
+            color: #a5b4fc;
         }
 
         .code-block {
             background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.25);
             border-radius: 8px;
             padding: 16px;
             margin: 16px 0;
@@ -181,20 +187,20 @@
         }
 
         .code-block code {
-            color: #a5b4fc;
+            color: #c4b5fd;
         }
 
         .step {
             margin-bottom: 24px;
             padding-left: 24px;
-            border-left: 2px solid rgba(99, 102, 241, 0.3);
+            border-left: 2px solid rgba(139, 92, 246, 0.4);
         }
 
         .step-number {
             display: inline-block;
             width: 28px;
             height: 28px;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
             border-radius: 50%;
             text-align: center;
             line-height: 28px;
@@ -204,17 +210,17 @@
         }
 
         .alert {
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.3);
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.4);
             border-radius: 8px;
             padding: 16px;
             margin: 16px 0;
-            color: #a5b4fc;
+            color: #c4b5fd;
             font-size: 14px;
         }
 
         .alert strong {
-            color: #6366f1;
+            color: #8b5cf6;
         }
     </style>
 </head>
@@ -228,7 +234,7 @@
 
         <div class="card">
             <h2>🚀 Quick Setup (Automatic Webhook)</h2>
-            <p style="color: #94a3b8; margin-bottom: 24px;">
+            <p style="color: #a5b4fc; margin-bottom: 24px;">
                 Authorize GitHub to automatically configure webhooks. No manual setup needed!
             </p>
             
@@ -290,7 +296,7 @@ Events: Just the push event</code>
                 <div class="code-block">
                     <code>git push origin main</code>
                 </div>
-                <p style="color: #94a3b8; margin-top: 8px; font-size: 14px;">
+                <p style="color: #a5b4fc; margin-top: 8px; font-size: 14px;">
                     This automatically deploys an Agent.sol contract on Somnia and starts your agent!
                 </p>
             </div>
