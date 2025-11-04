@@ -1257,6 +1257,70 @@
             }
         }
 
+        // Load trades
+        async function loadTrades() {
+            if (!selectedAgentId) {
+                document.getElementById('tradesContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">💼</div><div>Select an agent to view executed trades</div></div>';
+                return;
+            }
+
+            try {
+                const tradesContainer = document.getElementById('tradesContainer');
+                const tradesResponse = await fetch(`${API_BASE}/api/trades/${selectedAgentId}`, {
+                    signal: AbortSignal.timeout(5000) // 5 second timeout
+                });
+                
+                if (tradesResponse.ok) {
+                    const tradesData = await tradesResponse.json();
+                    if (tradesData.trades && tradesData.trades.length > 0) {
+                        tradesContainer.innerHTML = tradesData.trades.map(trade => {
+                            const timestamp = new Date(trade.timestamp).toLocaleString();
+                            const txHash = trade.trade_tx_hash || 'N/A';
+                            const txHashShort = txHash.length > 16 ? txHash.substring(0, 10) + '...' + txHash.substring(txHash.length - 6) : txHash;
+                            const explorerLink = txHash !== 'N/A' 
+                                ? `https://shannon-explorer.somnia.network/tx/${txHash}`
+                                : '#';
+                            
+                            return `
+                                <div class="trade-item">
+                                    <div class="trade-info">
+                                        <div class="trade-decision">🟢 ${trade.decision || 'BUY'}</div>
+                                        <div class="trade-details">
+                                            <span class="trade-price">Price: $${(trade.price || 0).toFixed(4)}</span>
+                                            ${trade.trade_amount ? `<span class="trade-amount">Amount: ${trade.trade_amount} tokens</span>` : ''}
+                                        </div>
+                                        <div class="trade-timestamp">${timestamp}</div>
+                                    </div>
+                                    <div class="trade-tx">
+                                        ${txHash !== 'N/A' ? `
+                                            <span class="trade-tx-hash">${txHashShort}</span>
+                                            <a href="${explorerLink}" target="_blank" class="trade-tx-link" title="View on Explorer">
+                                                🔗 View
+                                            </a>
+                                        ` : '<span style="color: var(--text-muted); font-size: 11px;">No TX hash</span>'}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    } else {
+                        tradesContainer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💼</div><div>No trades executed yet. Trades will appear here when the agent executes them.</div></div>';
+                    }
+                } else {
+                    const errorData = await tradesResponse.json().catch(() => ({}));
+                    tradesContainer.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><div>Could not fetch trades: ${errorData.error || tradesResponse.statusText}</div></div>`;
+                }
+            } catch (error) {
+                console.error('Error loading trades:', error);
+                if (error.name === 'AbortError') {
+                    document.getElementById('tradesContainer').innerHTML = 
+                        '<div class="empty-state"><div class="empty-state-icon">⏱️</div><div>Request timeout. Please try again.</div></div>';
+                } else {
+                    document.getElementById('tradesContainer').innerHTML = 
+                        '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div>Error loading trades. Please refresh.</div></div>';
+                }
+            }
+        }
+
         // Load logs
         async function loadLogs() {
             if (!selectedAgentId) {
