@@ -152,7 +152,7 @@ Agent can execute trades/DeFi on Somnia via contract.execute()
    
    **Option B: Manual Webhook Setup**
    - Go to your repository settings → Webhooks
-   - **Payload URL**: `https://somnia-git-agent.onrender.com/webhook/github`
+   - **Payload URL**: `https://somnia-git-agent.onrender.com/webhook/github/push`
    - **Content type**: `application/json`
    - **Events**: Select "Just the push event"
 

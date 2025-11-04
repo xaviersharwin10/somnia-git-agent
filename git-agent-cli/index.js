@@ -117,7 +117,7 @@ program
     
     console.log(chalk.yellow('⚙️  Option B: Manual Webhook Setup'));
     console.log(`   Go to: GitHub → ${answers.repo_url.split('/').slice(-2).join('/')} → Settings → Webhooks`);
-    console.log(`   Payload URL: ${chalk.cyan('https://somnia-git-agent.onrender.com/webhook/github')}`);
+    console.log(`   Payload URL: ${chalk.cyan('https://somnia-git-agent.onrender.com/webhook/github/push')}`);
     console.log(`   Content type: application/json`);
     console.log(`   Events: Just the push event`);
     console.log('');

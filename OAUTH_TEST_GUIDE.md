@@ -85,6 +85,6 @@ Check:
 
 If OAuth doesn't work, users can still manually configure webhooks:
 1. Repo → Settings → Webhooks → Add webhook
-2. URL: `https://somnia-git-agent.onrender.com/webhook/github`
+2. URL: `https://somnia-git-agent.onrender.com/webhook/github/push`
 3. Events: Just the push event
 

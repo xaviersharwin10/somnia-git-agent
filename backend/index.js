@@ -362,7 +362,7 @@ app.get('/auth/github', (req, res) => {
   if (!GITHUB_CLIENT_ID) {
     return res.status(500).json({ 
       error: 'GitHub OAuth not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.',
-      manual_setup: 'https://somnia-git-agent.onrender.com/webhook/github'
+      manual_setup: 'https://somnia-git-agent.onrender.com/webhook/github/push'
     });
   }
 
@@ -542,7 +542,7 @@ app.get('/auth/github/callback', async (req, res) => {
                 <hr>
                 <p><strong>Manual Setup:</strong></p>
                 <p>Go to: <code>https://github.com/${owner}/${repoName}/settings/hooks</code></p>
-                <p>Add webhook URL: <code>https://somnia-git-agent.onrender.com/webhook/github</code></p>
+                <p>Add webhook URL: <code>https://somnia-git-agent.onrender.com/webhook/github/push</code></p>
                 <p>Events: Just the push event</p>
                 <hr>
                 <p><a href="/">Home</a> | <a href="/dashboard">Dashboard</a></p>
@@ -551,7 +551,7 @@ app.get('/auth/github/callback', async (req, res) => {
             throw hooksError;
           }
 
-          const webhookUrl = `${BACKEND_URL}/webhook/github`;
+          const webhookUrl = `${BACKEND_URL}/webhook/github/push`;
           const webhookExists = existingWebhooks.data.some(
             hook => hook.config.url === webhookUrl
           );
@@ -673,7 +673,7 @@ app.get('/auth/github/callback', async (req, res) => {
             <hr>
             <p><strong>You can still set up the webhook manually:</strong></p>
             <p>1. Go to: <code>https://github.com/${owner}/${repoName}/settings/hooks</code></p>
-            <p>2. Add webhook URL: <code>https://somnia-git-agent.onrender.com/webhook/github</code></p>
+            <p>2. Add webhook URL: <code>https://somnia-git-agent.onrender.com/webhook/github/push</code></p>
             <p>3. Content type: <code>application/json</code></p>
             <p>4. Events: <code>Just the push event</code></p>
             <hr>
@@ -689,7 +689,7 @@ app.get('/auth/github/callback', async (req, res) => {
           <hr>
           <p><strong>You can still set up the webhook manually:</strong></p>
           <p>1. Go to your repository settings: <code>GitHub → Settings → Webhooks</code></p>
-          <p>2. Add webhook URL: <code>https://somnia-git-agent.onrender.com/webhook/github</code></p>
+          <p>2. Add webhook URL: <code>https://somnia-git-agent.onrender.com/webhook/github/push</code></p>
           <p>3. Content type: <code>application/json</code></p>
           <p>4. Events: <code>Just the push event</code></p>
           <hr>
@@ -2095,7 +2095,7 @@ app.listen(PORT, async () => {
   console.log('🚀 GitAgent Backend Server Started');
   console.log(`📡 Server running on port ${PORT}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-  console.log(`📥 GitHub webhook: http://localhost:${PORT}/webhook/github`);
+  console.log(`📥 GitHub webhook: http://localhost:${PORT}/webhook/github/push`);
   
   // Recover agents from blockchain on startup
   await recoverAgentsFromBlockchain();

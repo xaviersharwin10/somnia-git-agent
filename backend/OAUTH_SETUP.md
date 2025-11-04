@@ -56,7 +56,7 @@ https://somnia-git-agent.onrender.com/auth/github?repo_url=https://github.com/us
 
 If OAuth is not configured, users can manually set up webhooks:
 1. Go to repo → Settings → Webhooks
-2. Add webhook pointing to: `https://somnia-git-agent.onrender.com/webhook/github`
+2. Add webhook pointing to: `https://somnia-git-agent.onrender.com/webhook/github/push`
 
 ## Benefits
 
