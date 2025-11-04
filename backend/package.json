@@ -1,7 +1,7 @@
 {
-  "name": "gitagent-backend",
+  "name": "somniapush-backend",
   "version": "1.0.0",
-  "description": "GitAgent Backend Server for GitHub Webhooks and Agent Management",
+  "description": "SomniaPush Backend Server for GitHub Webhooks and Agent Management",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "gitagent",
+    "somniapush",
     "webhook",
     "blockchain",
     "automation"

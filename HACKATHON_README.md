@@ -1,4 +1,4 @@
-# GitAgent: "Vercel for AI Agents"
+# SomniaPush: "Vercel for AI Agents"
 
 **Track:** Infra Agents  
 **One-Line Pitch:** A "zero-friction," Git-native deployment platform. `git push` is your deploy. `git branch` is your A/B test.
@@ -15,7 +15,7 @@ Deploying and managing AI agents is complex, manual, and high-friction. Develope
 
 ## The Solution
 
-GitAgent solves this by mapping the agent lifecycle to the Git workflow, making AI agent deployment as simple as pushing code.
+SomniaPush solves this by mapping the agent lifecycle to the Git workflow, making AI agent deployment as simple as pushing code.
 
 ### Core Features
 
@@ -31,12 +31,12 @@ GitAgent solves this by mapping the agent lifecycle to the Git workflow, making 
 - Easy rollbacks with `git revert`
 - Collaborative development with team members
 
-#### 🛠️ The `git agent` CLI
-- `git agent init` - Initialize GitAgent in your repository
-- `git agent secrets set GROQ_API_KEY=...` - Secure secret management
-- `git agent stats` - Real-time agent performance metrics
-- `git agent logs` - Live agent output and decisions
-- `git agent compare main aggressive` - Side-by-side branch comparison
+#### 🛠️ The `git somnia-agent` CLI
+- `git somnia-agent init` - Initialize SomniaPush in your repository
+- `git somnia-agent secrets set GROQ_API_KEY=...` - Secure secret management
+- `git somnia-agent stats` - Real-time agent performance metrics
+- `git somnia-agent logs` - Live agent output and decisions
+- `git somnia-agent compare main aggressive` - Side-by-side branch comparison
 
 ## Somnia Blockchain Integration ⛓️
 
@@ -71,7 +71,7 @@ GitAgent solves this by mapping the agent lifecycle to the Git workflow, making 
 ```
 Developer → git push
     ↓
-GitHub Webhook → GitAgent Backend
+GitHub Webhook → SomniaPush Backend
     ↓
 Deploy Agent.sol contract on Somnia Testnet
     ↓
@@ -127,7 +127,7 @@ Agent can execute trades/DeFi on Somnia via contract.execute()
    ```
    > The agent template is a **separate repository** that users fork/clone. This is how real-world usage works - each user has their own agent repository.
 
-2. **Set up GitAgent:**
+2. **Set up SomniaPush:**
    ```bash
    # Install CLI (from source - publish to npm for easier install)
    git clone https://github.com/xaviersharwin10/somnia-git-agent.git
@@ -139,15 +139,15 @@ Agent can execute trades/DeFi on Somnia via contract.execute()
    
    # Initialize in your agent repo
    cd ../../gitAgent  # or your agent repo
-   git agent init
-   git agent secrets set GROQ_API_KEY=your-key
+   git somnia-agent init
+   git somnia-agent secrets set GROQ_API_KEY=your-key
    ```
 
 3. **Configure GitHub Integration** (Choose one):
 
    **Option A: Automatic Setup (Vercel-like - Recommended)**
    - Visit: `https://somnia-git-agent.onrender.com/auth/github?repo_url=YOUR_REPO_URL`
-   - Authorize GitAgent to access your repository
+   - Authorize SomniaPush to access your repository
    - Webhook will be automatically configured ✅
    
    **Option B: Manual Webhook Setup**
@@ -164,8 +164,8 @@ Agent can execute trades/DeFi on Somnia via contract.execute()
 
 5. **Monitor:**
    ```bash
-   git agent stats
-   git agent logs
+   git somnia-agent stats
+   git somnia-agent logs
    ```
 
 ## The "Wow" Moment
@@ -176,7 +176,7 @@ Create a new branch, modify your AI prompt, and push:
 git checkout -b aggressive
 # Edit agent.ts with new prompt
 git push origin aggressive
-git agent compare main aggressive
+git somnia-agent compare main aggressive
 ```
 
 **Two AI agents running in parallel from the same repository!**
@@ -184,13 +184,13 @@ git agent compare main aggressive
 ## Why This Matters for Somnia
 
 ### 🎯 **Infrastructure Track Fit**
-This is infrastructure that makes deploying Somnia agents **10x easier**. Before GitAgent:
+This is infrastructure that makes deploying Somnia agents **10x easier**. Before SomniaPush:
 - ❌ Manual contract deployment for each agent
 - ❌ No way to track which agents are deployed
 - ❌ Difficult to manage multiple agent versions
 - ❌ No unified deployment workflow
 
-After GitAgent:
+After SomniaPush:
 - ✅ `git push` auto-deploys agents to Somnia
 - ✅ On-chain registry tracks all agents
 - ✅ Each branch = separate agent contract
@@ -221,4 +221,4 @@ This bridges the gap between **Git workflows** (what devs know) and **on-chain a
 
 ---
 
-**GitAgent: Making AI agent deployment as simple as `git push`** 🚀
+**SomniaPush: Making AI agent deployment as simple as `git push`** 🚀

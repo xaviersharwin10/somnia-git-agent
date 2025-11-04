@@ -95,6 +95,19 @@
             gap: 24px;
         }
 
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 8px;
+        }
+
+        .header-logo img {
+            height: 48px;
+            width: auto;
+            object-fit: contain;
+        }
+
         .header-left h1 {
             font-size: 32px;
             font-weight: 700;
@@ -102,7 +115,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 8px;
+            margin: 0;
             letter-spacing: -0.5px;
         }
 
@@ -785,7 +798,10 @@
         <header>
             <div class="header-content">
                 <div class="header-left">
-                    <h1>🤖 SomniaPush Agents Dashboard</h1>
+                    <div class="header-logo">
+                        <img src="/logo.jpg" alt="SomniaPush Logo">
+                        <h1>SomniaPush Dashboard</h1>
+                    </div>
                     <p class="subtitle">Track & Monitor Your AI Trading Agents on Somnia Blockchain • Each branch = unique smart contract</p>
                 </div>
                 <div class="header-badge">

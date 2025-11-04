@@ -24,8 +24,8 @@ const CONFIG_FILE = '.gitagent.json';
 // Reads the .gitagent.json file
 function getConfig() {
   if (!fs.existsSync(CONFIG_FILE)) {
-    console.error(chalk.red(`Error: Not a GitAgent repository. Missing ${CONFIG_FILE}.`));
-    console.log(chalk.yellow('Run `git agent init` to get started.'));
+    console.error(chalk.red(`Error: Not a SomniaPush repository. Missing ${CONFIG_FILE}.`));
+    console.log(chalk.yellow('Run `git somnia-agent init` to get started.'));
     process.exit(1);
   }
   const config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
@@ -77,7 +77,7 @@ async function getStats(repo_url, branch_name) {
  */
 program
   .command('init')
-  .description('Initialize GitAgent in the current repository')
+  .description('Initialize SomniaPush in the current repository')
   .action(async () => {
     if (fs.existsSync(CONFIG_FILE)) {
       console.log(chalk.yellow(`This project is already initialized.`));

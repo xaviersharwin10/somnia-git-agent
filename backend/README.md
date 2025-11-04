@@ -1,4 +1,4 @@
-# GitAgent Backend Server
+# SomniaPush Backend Server
 
 Node.js Express server for handling GitHub webhooks and managing agent information.
 

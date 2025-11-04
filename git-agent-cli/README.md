@@ -1,8 +1,8 @@
-# GitAgent CLI for Somnia
+# SomniaPush CLI
 
-**Built for the Somnia AI Hackathon** - Command-line tool for interacting with the GitAgent platform on Somnia blockchain.
+**Built for the Somnia AI Hackathon** - Command-line tool for interacting with the SomniaPush platform on Somnia blockchain.
 
-GitAgent makes deploying AI agents on Somnia as simple as `git push`. This CLI lets you manage your Somnia agents directly from the command line.
+SomniaPush makes deploying AI agents on Somnia as simple as `git push`. This CLI lets you manage your Somnia agents directly from the command line.
 
 ## Installation
 
@@ -37,7 +37,7 @@ npm link
 
 ## Commands
 
-* `git somnia-agent init` - Initialize GitAgent in your repository.
+* `git somnia-agent init` - Initialize SomniaPush in your repository.
 * `git somnia-agent secrets set <KEY=VALUE>` - Set a secret for the current branch (e.g., `GROQ_API_KEY=sk-...`).
 * `git somnia-agent stats` - Get real-time stats for the current branch's agent on Somnia.
 * `git somnia-agent logs` - Get the last 50 lines of agent logs.
@@ -62,7 +62,7 @@ Then you can use `git somnia-agent` as shown above.
 
 ## Somnia Blockchain Integration
 
-This CLI works with GitAgent platform that deploys AI agents as smart contracts on **Somnia testnet**:
+This CLI works with SomniaPush platform that deploys AI agents as smart contracts on **Somnia testnet**:
 - Each agent branch = separate smart contract on Somnia
 - Agents can execute trades on Somnia DEXs
 - On-chain agent registry via AgentFactory contract
@@ -128,7 +128,7 @@ git somnia-agent --help
 
 ## About Somnia AI Hackathon
 
-This CLI is part of **GitAgent** - an infrastructure project for the Somnia AI Hackathon that makes deploying AI agents on Somnia blockchain as simple as `git push`.
+This CLI is part of **SomniaPush** - an infrastructure project for the Somnia AI Hackathon that makes deploying AI agents on Somnia blockchain as simple as `git push`.
 
 **Track**: Infra Agents  
 **Repository**: https://github.com/xaviersharwin10/somnia-git-agent  
@@ -138,7 +138,7 @@ This CLI is part of **GitAgent** - an infrastructure project for the Somnia AI H
 
 - Node.js 16+
 - Git repository
-- GitAgent backend (production: https://somnia-git-agent.onrender.com)
+- SomniaPush backend (production: https://somnia-git-agent.onrender.com)
 
 
 

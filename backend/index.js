@@ -1754,6 +1754,9 @@ app.get('/api/logs/:repo_url/:branch_name', (req, res) => {
 });
 
 // Serve landing page
+// Serve static files (logo, etc.)
+app.use('/logo.jpg', express.static(path.join(__dirname, '..', 'logo.jpg')));
+
 app.get('/', (req, res) => {
   const landingPath = path.join(__dirname, 'landing.html');
   if (fs.existsSync(landingPath)) {
@@ -2108,7 +2111,7 @@ app.post('/api/agents/check-recovery', async (req, res) => {
 
 // Start the server
 app.listen(PORT, async () => {
-  console.log('🚀 GitAgent Backend Server Started');
+  console.log('🚀 SomniaPush Backend Server Started');
   console.log(`📡 Server running on port ${PORT}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
   console.log(`📥 GitHub webhook: http://localhost:${PORT}/webhook/github/push`);

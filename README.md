@@ -1,6 +1,6 @@
-# GitAgent - On-Chain Infrastructure
+# SomniaPush - On-Chain Infrastructure
 
-This project implements the core on-chain infrastructure for GitAgent using Hardhat and Solidity. It provides a factory pattern for deploying and managing Agent contracts that can execute arbitrary calls and manage funds.
+This project implements the core on-chain infrastructure for SomniaPush using Hardhat and Solidity. It provides a factory pattern for deploying and managing Agent contracts that can execute arbitrary calls and manage funds.
 
 ## Project Structure
 

@@ -1,7 +1,7 @@
 {
   "name": "git-somnia-agent",
   "version": "1.0.2",
-  "description": "Command-line tool for interacting with the GitAgent platform on Somnia",
+  "description": "Command-line tool for interacting with the SomniaPush platform on Somnia",
   "main": "index.js",
   "readme": "README.md",
   "bin": {
@@ -24,7 +24,7 @@
     "defi",
     "autonomous-agents"
   ],
-  "author": "GitAgent Team",
+  "author": "SomniaPush Team",
   "license": "MIT",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

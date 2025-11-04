@@ -1,12 +1,12 @@
 # GitHub OAuth Setup for Automatic Webhook Configuration
 
-GitAgent supports **automatic webhook setup** via GitHub OAuth (similar to Vercel), eliminating the need for manual webhook configuration.
+SomniaPush supports **automatic webhook setup** via GitHub OAuth (similar to Vercel), eliminating the need for manual webhook configuration.
 
 ## How It Works
 
 1. User visits `/auth/github?repo_url=YOUR_REPO_URL`
-2. User authorizes GitAgent via GitHub OAuth
-3. GitAgent automatically creates a webhook via GitHub API
+2. User authorizes SomniaPush via GitHub OAuth
+3. SomniaPush automatically creates a webhook via GitHub API
 4. Future `git push` events trigger deployments automatically
 
 ## Setup Instructions
@@ -16,7 +16,7 @@ GitAgent supports **automatic webhook setup** via GitHub OAuth (similar to Verce
 1. Go to https://github.com/settings/developers
 2. Click "New OAuth App"
 3. Fill in:
-   - **Application name**: `GitAgent`
+   - **Application name**: `SomniaPush`
    - **Homepage URL**: `https://somnia-git-agent.onrender.com`
    - **Authorization callback URL**: `https://somnia-git-agent.onrender.com/auth/github/callback`
 4. Click "Register application"
@@ -47,7 +47,7 @@ The OAuth endpoints will be available at:
 # 1. Visit OAuth URL with your repo
 https://somnia-git-agent.onrender.com/auth/github?repo_url=https://github.com/username/repo.git
 
-# 2. Authorize GitAgent
+# 2. Authorize SomniaPush
 # 3. Webhook is automatically configured!
 # 4. Just git push to deploy
 ```
@@ -62,7 +62,7 @@ If OAuth is not configured, users can manually set up webhooks:
 
 - ✅ **Zero-friction onboarding** - No manual webhook configuration needed
 - ✅ **Vercel-like experience** - Familiar workflow for developers
-- ✅ **Automatic webhook management** - GitAgent handles everything
+- ✅ **Automatic webhook management** - SomniaPush handles everything
 - ✅ **Secure** - Tokens encrypted and stored securely
 
 ## Database Schema

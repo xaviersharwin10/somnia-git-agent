@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🧪 Testing GitAgent Platform Locally"
+echo "🧪 Testing SomniaPush Platform Locally"
 echo "===================================="
 
 # Test 1: Backend syntax check
