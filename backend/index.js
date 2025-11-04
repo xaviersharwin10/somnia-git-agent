@@ -9,6 +9,135 @@ const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 
+// Safe PM2 wrapper to prevent crashes
+const safePm2 = {
+  connect: (callback) => {
+    try {
+      // Wrap PM2 connect in timeout to prevent hanging
+      const timeout = setTimeout(() => {
+        console.warn('[PM2] Connection timeout (non-fatal)');
+        callback(new Error('PM2 connection timeout'));
+      }, 5000); // 5 second timeout
+      
+      pm2.connect((err) => {
+        clearTimeout(timeout);
+        if (err) {
+          console.warn('[PM2] Connection failed (non-fatal):', err.message);
+          return callback(err);
+        }
+        callback(null);
+      });
+    } catch (error) {
+      console.warn('[PM2] Connection error (non-fatal):', error.message);
+      callback(error);
+    }
+  },
+  
+  disconnect: () => {
+    try {
+      pm2.disconnect();
+    } catch (error) {
+      // Ignore disconnect errors
+      console.warn('[PM2] Disconnect error (ignored):', error.message);
+    }
+  },
+  
+  list: (callback) => {
+    try {
+      pm2.list((err, list) => {
+        if (err) {
+          console.warn('[PM2] List error (non-fatal):', err.message);
+          return callback(err, []);
+        }
+        callback(null, list || []);
+      });
+    } catch (error) {
+      console.warn('[PM2] List error (non-fatal):', error.message);
+      callback(error, []);
+    }
+  },
+  
+  start: (config, callback) => {
+    try {
+      pm2.start(config, (err, proc) => {
+        if (err) {
+          console.warn('[PM2] Start error:', err.message);
+          return callback(err, null);
+        }
+        callback(null, proc);
+      });
+    } catch (error) {
+      console.warn('[PM2] Start error:', error.message);
+      callback(error, null);
+    }
+  },
+  
+  reload: (name, options, callback) => {
+    try {
+      pm2.reload(name, options, (err, proc) => {
+        if (err) {
+          console.warn('[PM2] Reload error:', err.message);
+          return callback(err, null);
+        }
+        callback(null, proc);
+      });
+    } catch (error) {
+      console.warn('[PM2] Reload error:', error.message);
+      callback(error, null);
+    }
+  },
+  
+  delete: (name, callback) => {
+    try {
+      pm2.delete(name, (err) => {
+        if (err) {
+          console.warn('[PM2] Delete error:', err.message);
+          return callback(err);
+        }
+        callback(null);
+      });
+    } catch (error) {
+      console.warn('[PM2] Delete error:', error.message);
+      callback(error);
+    }
+  },
+  
+  describe: (name, callback) => {
+    try {
+      pm2.describe(name, (err, proc) => {
+        if (err) {
+          console.warn('[PM2] Describe error:', err.message);
+          return callback(err, []);
+        }
+        callback(null, proc || []);
+      });
+    } catch (error) {
+      console.warn('[PM2] Describe error:', error.message);
+      callback(error, []);
+    }
+  }
+};
+
+// Global error handler for PM2 crashes
+process.on('uncaughtException', (error) => {
+  if (error.message && error.message.includes('sock')) {
+    console.error('[CRITICAL] PM2 socket error caught (preventing crash):', error.message);
+    console.error('[CRITICAL] Stack:', error.stack);
+    // Don't exit - let the server continue
+    return;
+  }
+  console.error('[CRITICAL] Uncaught exception:', error);
+  // For other errors, still log but don't crash
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  if (reason && reason.message && reason.message.includes('sock')) {
+    console.error('[CRITICAL] PM2 socket rejection caught (preventing crash):', reason.message);
+    return;
+  }
+  console.error('[CRITICAL] Unhandled rejection:', reason);
+});
+
 // Enable CORS for dashboard
 const cors = require('cors');
 
@@ -223,29 +352,37 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
 
   // 3. Connect to PM2 and start/reload
   return new Promise((resolve, reject) => {
-    pm2.connect((err) => {
-      if (err) return reject(err);
+    safePm2.connect((err) => {
+      if (err) {
+        console.error(`[PM2] Failed to connect for agent ${agent.id}:`, err.message);
+        db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id]);
+        return reject(new Error(`PM2 connection failed: ${err.message}`));
+      }
 
       // First, try to list processes to check if it exists
-      pm2.list((listErr, processList) => {
-        if (listErr) return reject(listErr);
+      safePm2.list((listErr, processList) => {
+        if (listErr) {
+          safePm2.disconnect();
+          console.error(`[PM2] Failed to list processes for agent ${agent.id}:`, listErr.message);
+          db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id]);
+          return reject(new Error(`PM2 list failed: ${listErr.message}`));
+        }
         
         const existingProc = processList.find(p => p.name === pm2Name);
         
         if (existingProc) {
           // App exists - delete and restart to ensure env vars are updated
-          pm2.delete(pm2Name, (deleteErr) => {
+          safePm2.delete(pm2Name, (deleteErr) => {
             if (deleteErr) {
               console.warn(`Failed to delete existing process, trying reload: ${deleteErr.message}`);
               // Fallback to reload if delete fails
-              pm2.reload(pm2Name, { updateEnv: true }, (reloadErr, proc) => {
+              safePm2.reload(pm2Name, { updateEnv: true }, (reloadErr, proc) => {
+                safePm2.disconnect();
                 if (reloadErr) {
-                  pm2.disconnect();
                   db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id]);
-                  console.error(`Failed to reload agent ${agent.id}:`, reloadErr);
-                  return reject(reloadErr);
+                  console.error(`Failed to reload agent ${agent.id}:`, reloadErr.message || reloadErr);
+                  return reject(new Error(`PM2 reload failed: ${reloadErr.message || reloadErr}`));
                 }
-                pm2.disconnect();
                 const pid = proc?.[0]?.pid || existingProc.pid;
                 db.run('UPDATE agents SET status = ?, pid = ? WHERE id = ?', ['running', pid, agent.id]);
                 console.log(`✅ Agent ${agent.id} (${agent.branch_name}) reloaded with PID ${pid}`);
@@ -253,14 +390,13 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
               });
             } else {
               // Start fresh with updated env vars
-              pm2.start(pm2App, (startErr, proc) => {
+              safePm2.start(pm2App, (startErr, proc) => {
+                safePm2.disconnect();
                 if (startErr) {
-                  pm2.disconnect();
                   db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id]);
-                  console.error(`Failed to restart agent ${agent.id}:`, startErr);
-                  return reject(startErr);
+                  console.error(`Failed to restart agent ${agent.id}:`, startErr.message || startErr);
+                  return reject(new Error(`PM2 start failed: ${startErr.message || startErr}`));
                 }
-                pm2.disconnect();
                 const pid = proc?.[0]?.pid;
                 if (pid) {
                   db.run('UPDATE agents SET status = ?, pid = ? WHERE id = ?', ['running', pid, agent.id]);
@@ -277,7 +413,7 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
           // App not found, check if agent directory exists first
           const agentTsPath = path.join(agentPath, 'agent.ts');
           if (!fs.existsSync(agentTsPath)) {
-            pm2.disconnect();
+            safePm2.disconnect();
             const errorMsg = `Agent file not found: ${agentTsPath}`;
             console.error(`❌ ${errorMsg}`);
             db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id]);
@@ -286,13 +422,13 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
           
           // App not found, start it
           console.log(`[PM2] Starting agent ${agent.id} (${agent.branch_name}) at ${agentTsPath}`);
-          pm2.start(pm2App, (startErr, proc) => {
+          safePm2.start(pm2App, (startErr, proc) => {
+            safePm2.disconnect();
             if (startErr) {
-              pm2.disconnect();
               // Update status to error if start fails
               db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id]);
               console.error(`❌ Failed to start agent ${agent.id} (${agent.branch_name}):`, startErr.message || startErr);
-              return reject(startErr);
+              return reject(new Error(`PM2 start failed: ${startErr.message || startErr}`));
             }
             
             // Update DB with pid and status
@@ -310,7 +446,6 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
               console.log(`✅ Agent ${agent.id} (${agent.branch_name || 'unknown'}) started (PID not available)`);
             }
             
-            pm2.disconnect();
             resolve(proc);
           });
         }
@@ -321,15 +456,20 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
 
 // Helper function to get PM2 status
 function getPm2Status(branchHash) {
-  return new Promise((resolve, reject) => {
-    pm2.connect((err) => {
-      if (err) return reject(err);
+  return new Promise((resolve) => {
+    safePm2.connect((err) => {
+      if (err) {
+        console.warn('[PM2] Connection failed in getPm2Status:', err.message);
+        return resolve(null);
+      }
       
-      pm2.describe(branchHash, (err, proc) => {
-        pm2.disconnect();
+      safePm2.describe(branchHash, (err, proc) => {
+        safePm2.disconnect();
         
-        if (err || proc.length === 0) return resolve(null); // Not found
-        resolve(proc[0].pm2_env.status); // e.g., 'online', 'stopped', 'errored'
+        if (err || !proc || proc.length === 0) {
+          return resolve(null); // Not found
+        }
+        resolve(proc[0].pm2_env?.status || null); // e.g., 'online', 'stopped', 'errored'
       });
     });
   });
@@ -1404,17 +1544,19 @@ app.get('/api/agents', async (req, res) => {
           resolve();
         }, 2000); // 2 second timeout
         
-        pm2.connect((connectErr) => {
+        safePm2.connect((connectErr) => {
           if (connectErr) {
             clearTimeout(timeout);
+            console.warn('[PM2] Status sync connection failed (non-fatal):', connectErr.message);
             resolve();
             return;
           }
           
-          pm2.list((listErr, processList) => {
+          safePm2.list((listErr, processList) => {
             clearTimeout(timeout);
             if (listErr) {
-              pm2.disconnect();
+              safePm2.disconnect();
+              console.warn('[PM2] Status sync list failed (non-fatal):', listErr.message);
               resolve();
               return;
             }
@@ -1495,7 +1637,7 @@ app.get('/api/agents', async (req, res) => {
               }
             });
             
-            pm2.disconnect();
+            safePm2.disconnect();
             resolve();
           });
         });
