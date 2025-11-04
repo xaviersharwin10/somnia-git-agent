@@ -1039,10 +1039,23 @@
                     url += `?repo_url=${encodeURIComponent(selectedRepoUrl)}`;
                 }
                 
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    signal: AbortSignal.timeout(10000) // 10 second timeout
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
                 
+                if (!data || !Array.isArray(data.agents)) {
+                    throw new Error('Invalid response format');
+                }
+                
                 const newAgents = data.agents || [];
+                
+                console.log(`[Dashboard] Loaded ${newAgents.length} agents:`, newAgents.map(a => a.branch_name));
                 
                 // Auto-select newly deployed agents
                 if (newAgents.length > allAgents.length) {
@@ -1057,8 +1070,14 @@
                 displayAgents(allAgents);
             } catch (error) {
                 console.error('Error loading agents:', error);
+                const errorMsg = error.message || 'Unknown error';
                 document.getElementById('agentList').innerHTML = 
-                    '<div class="empty-state"><div class="empty-state-icon">❌</div><div>Error loading agents</div></div>';
+                    `<div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <div>Error loading agents</div>
+                        <div style="font-size: 11px; margin-top: 8px; color: var(--text-muted);">${errorMsg}</div>
+                        <button class="btn" onclick="loadAgents()" style="margin-top: 12px; width: auto; padding: 8px 16px;">Retry</button>
+                    </div>`;
             }
         }
 
@@ -1082,11 +1101,16 @@
 
         // Load logs
         async function loadLogs() {
-            if (!selectedAgentId) return;
+            if (!selectedAgentId) {
+                document.getElementById('logsContainer').innerHTML = '<div class="log-entry info">Select an agent to view logs</div>';
+                return;
+            }
 
             try {
                 const logsContainer = document.getElementById('logsContainer');
-                const logResponse = await fetch(`${API_BASE}/api/logs/${selectedAgentId}`);
+                const logResponse = await fetch(`${API_BASE}/api/logs/${selectedAgentId}`, {
+                    signal: AbortSignal.timeout(5000) // 5 second timeout
+                });
                 
                 if (logResponse.ok) {
                     const logData = await logResponse.json();
@@ -1095,24 +1119,31 @@
                         
                         logsContainer.innerHTML = logData.logs.slice(-50).map(log => {
                             let className = 'log-entry';
-                            if (log.includes('Error') || log.includes('error')) className += ' error';
-                            else if (log.includes('BUY') || log.includes('✅')) className += ' success';
-                            else if (log.includes('PriceFeed') || log.includes('AI Decision')) className += ' info';
+                            if (log.includes('Error') || log.includes('error') || log.includes('❌')) className += ' error';
+                            else if (log.includes('BUY') || log.includes('✅') || log.includes('🟢')) className += ' success';
+                            else if (log.includes('HOLD') || log.includes('🟡')) className += ' info';
+                            else if (log.includes('PriceFeed') || log.includes('AI Decision') || log.includes('[Info]')) className += ' info';
                             
                             return `<div class="${className}">${log}</div>`;
                         }).join('');
                         
                         logsContainer.scrollTop = logsContainer.scrollHeight;
                     } else {
-                        logsContainer.innerHTML = '<div class="log-entry info">No logs yet</div>';
+                        logsContainer.innerHTML = '<div class="log-entry info">No logs available yet. Agent may be starting up.</div>';
                     }
                 } else {
-                    logsContainer.innerHTML = '<div class="log-entry error">Could not fetch logs</div>';
+                    const errorData = await logResponse.json().catch(() => ({}));
+                    logsContainer.innerHTML = `<div class="log-entry error">Could not fetch logs: ${errorData.error || logResponse.statusText}</div>`;
                 }
             } catch (error) {
                 console.error('Error loading logs:', error);
-                document.getElementById('logsContainer').innerHTML = 
-                    '<div class="log-entry error">Error loading logs</div>';
+                if (error.name === 'AbortError') {
+                    document.getElementById('logsContainer').innerHTML = 
+                        '<div class="log-entry error">Request timeout. Please try again.</div>';
+                } else {
+                    document.getElementById('logsContainer').innerHTML = 
+                        '<div class="log-entry error">Error loading logs. Please refresh.</div>';
+                }
             }
         }
 
@@ -1257,17 +1288,24 @@
         }
 
         // Auto-refresh - more frequent to catch new deployments
+        let isRefreshing = false;
+        
         agentInterval = setInterval(() => {
-            loadAgents();
-            loadComparison();
-        }, 5000); // Check every 5 seconds for new agents
+            if (!isRefreshing) {
+                isRefreshing = true;
+                Promise.all([loadAgents(), loadComparison()])
+                    .finally(() => {
+                        setTimeout(() => { isRefreshing = false; }, 1000);
+                    });
+            }
+        }, 8000); // Check every 8 seconds (reduced frequency to avoid overload)
 
         logInterval = setInterval(() => {
-            if (selectedAgentId) {
+            if (selectedAgentId && !isRefreshing) {
                 loadLogs();
                 loadStats();
             }
-        }, 3000); // Refresh logs/stats every 3 seconds
+        }, 5000); // Refresh logs/stats every 5 seconds
 
         // Initial load
         loadRepositories();

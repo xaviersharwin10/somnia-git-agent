@@ -86,7 +86,7 @@ const ABI = [
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3005;
 const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
 
 // Ethers setup - Initialize lazily to avoid startup failures
@@ -1171,7 +1171,9 @@ app.get('/api/agents', async (req, res) => {
     params.push(repo_url);
   }
   
-  query += ' ORDER BY created_at DESC';
+  query += ' ORDER BY created_at DESC, id DESC';
+  
+  console.log(`[API] /api/agents - Query: ${query}, Params:`, params);
   
   db.all(query, params, async (err, rows) => {
     if (err) {
@@ -1179,82 +1181,119 @@ app.get('/api/agents', async (req, res) => {
       return res.status(500).json({ error: 'Database error' });
     }
     
-    // Sync status from PM2 for agents that should be running
+    // Sync status from PM2 (non-blocking, with timeout)
     if (rows && rows.length > 0) {
-      try {
-        await new Promise((resolve) => {
-          pm2.connect((connectErr) => {
-            if (connectErr) {
-              // PM2 not available - that's okay, return agents as-is
+      // Start PM2 sync but don't wait for it - return agents immediately
+      // Sync happens in background to avoid blocking API response
+      const syncPromise = new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          console.warn('PM2 status sync timeout, returning agents as-is');
+          resolve();
+        }, 2000); // 2 second timeout
+        
+        pm2.connect((connectErr) => {
+          if (connectErr) {
+            clearTimeout(timeout);
+            resolve();
+            return;
+          }
+          
+          pm2.list((listErr, processList) => {
+            clearTimeout(timeout);
+            if (listErr) {
+              pm2.disconnect();
               resolve();
               return;
             }
             
-            pm2.list((listErr, processList) => {
-              if (listErr) {
-                pm2.disconnect();
-                resolve();
-                return;
-              }
-              
-              // Update status based on PM2 state
-              const updatePromises = rows.map((agent) => {
-                return new Promise((resolveUpdate) => {
-                  if (agent.status === 'deploying' || agent.status === 'running') {
-                    const pm2Name = agent.branch_hash.replace('0x', '').substring(0, 16);
-                    const pm2Proc = processList.find(p => p.name === pm2Name);
-                    
-                    if (pm2Proc) {
-                      // PM2 process exists - check if it's actually running
-                      if (pm2Proc.pm2_env.status === 'online') {
-                        if (agent.status !== 'running') {
+            // Update status based on PM2 state (non-blocking)
+            // Also check metrics to verify if agent is actually running
+            rows.forEach((agent) => {
+              try {
+                const pm2Name = agent.branch_hash.replace('0x', '').substring(0, 16);
+                const pm2Proc = processList.find(p => p.name === pm2Name);
+                
+                // Check PM2 status first
+                if (pm2Proc) {
+                  if (pm2Proc.pm2_env.status === 'online') {
+                    // PM2 says online - verify with metrics
+                    db.get('SELECT COUNT(*) as count FROM metrics WHERE agent_id = ? AND timestamp > datetime("now", "-5 minutes")', 
+                      [agent.id], (err, metricRow) => {
+                        if (!err && metricRow && metricRow.count > 0) {
+                          // Agent is sending metrics = it's running
+                          if (agent.status !== 'running') {
+                            db.run('UPDATE agents SET status = ?, pid = ? WHERE id = ?', 
+                              ['running', pm2Proc.pid, agent.id], () => {
+                              agent.status = 'running';
+                            });
+                          }
+                        } else if (agent.status === 'error' || agent.status === 'deploying') {
+                          // PM2 online but no recent metrics - might be starting
+                          // Keep status as is for now, but if it's been deploying for too long, check
                           db.run('UPDATE agents SET status = ?, pid = ? WHERE id = ?', 
                             ['running', pm2Proc.pid, agent.id], () => {
                             agent.status = 'running';
-                            resolveUpdate();
                           });
-                        } else {
-                          resolveUpdate();
                         }
-                      } else if (pm2Proc.pm2_env.status === 'stopped' || pm2Proc.pm2_env.status === 'errored') {
-                        if (agent.status !== 'error') {
-                          db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id], () => {
-                            agent.status = 'error';
-                            resolveUpdate();
+                      });
+                  } else if (pm2Proc.pm2_env.status === 'stopped' || pm2Proc.pm2_env.status === 'errored') {
+                    // PM2 says stopped/errored
+                    db.get('SELECT COUNT(*) as count FROM metrics WHERE agent_id = ? AND timestamp > datetime("now", "-5 minutes")', 
+                      [agent.id], (err, metricRow) => {
+                        if (!err && metricRow && metricRow.count > 0) {
+                          // Metrics coming in but PM2 says stopped - might be running outside PM2
+                          // Mark as running
+                          db.run('UPDATE agents SET status = ? WHERE id = ?', ['running', agent.id], () => {
+                            agent.status = 'running';
                           });
                         } else {
-                          resolveUpdate();
+                          // No metrics and PM2 stopped - mark as error
+                          if (agent.status !== 'error') {
+                            db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id], () => {
+                              agent.status = 'error';
+                            });
+                          }
+                        }
+                      });
+                  }
+                } else {
+                  // PM2 process not found - check if metrics are coming in
+                  db.get('SELECT COUNT(*) as count FROM metrics WHERE agent_id = ? AND timestamp > datetime("now", "-5 minutes")', 
+                    [agent.id], (err, metricRow) => {
+                      if (!err && metricRow && metricRow.count > 0) {
+                        // Metrics coming in = agent is running (maybe not managed by PM2)
+                        if (agent.status !== 'running') {
+                          db.run('UPDATE agents SET status = ? WHERE id = ?', ['running', agent.id], () => {
+                            agent.status = 'running';
+                          });
                         }
                       } else {
-                        resolveUpdate();
+                        // No PM2 process and no recent metrics
+                        if (agent.status === 'running') {
+                          db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id], () => {
+                            agent.status = 'error';
+                          });
+                        }
                       }
-                    } else if (agent.status === 'running') {
-                      // PM2 process not found but DB says running - mark as error
-                      db.run('UPDATE agents SET status = ? WHERE id = ?', ['error', agent.id], () => {
-                        agent.status = 'error';
-                        resolveUpdate();
-                      });
-                    } else {
-                      resolveUpdate();
-                    }
-                  } else {
-                    resolveUpdate();
-                  }
-                });
-              });
-              
-              Promise.all(updatePromises).then(() => {
-                pm2.disconnect();
-                resolve();
-              });
+                    });
+                }
+              } catch (updateErr) {
+                console.warn(`Error updating status for agent ${agent.id}:`, updateErr.message);
+              }
             });
+            
+            pm2.disconnect();
+            resolve();
           });
         });
-      } catch (syncError) {
-        console.warn('Error syncing PM2 status:', syncError.message);
-      }
+      });
+      
+      // Don't await - return agents immediately, sync happens in background
+      syncPromise.catch(err => console.warn('PM2 sync error (non-fatal):', err.message));
     }
     
+    // Always return agents, even if PM2 sync fails
+    console.log(`[API] /api/agents - Returning ${rows.length} agent(s):`, rows.map(r => r.branch_name));
     res.json({ agents: rows });
   });
 });
@@ -1415,73 +1454,81 @@ app.get('/api/stats/:repo_url/:branch_name', async (req, res) => {
 app.get('/api/logs/:branch_hash', (req, res) => {
   const { branch_hash } = req.params;
   
-  // Remove 0x prefix and get first 16 chars for PM2 name
-  const pm2Name = branch_hash.replace('0x', '').substring(0, 16);
-  
-  // PM2 logs location - try multiple paths (local dev vs production)
-  const possibleLogPaths = [
-    path.join(process.env.HOME || process.env.USERPROFILE || '/tmp', '.pm2', 'logs', `${pm2Name}-out.log`),
-    path.join('/tmp', '.pm2', 'logs', `${pm2Name}-out.log`),
-    path.join(process.cwd(), '.pm2', 'logs', `${pm2Name}-out.log`)
-  ];
-  
-  let logPath = possibleLogPaths.find(p => fs.existsSync(p)) || possibleLogPaths[0];
-
   try {
-    if (fs.existsSync(logPath)) {
-      const logs = fs.readFileSync(logPath, 'utf8');
-      const lastLines = logs.split('\n').slice(-100).filter(line => line.trim()); // Get last 100 lines
-      res.status(200).json({ logs: lastLines });
-    } else {
-      // Try error log too
-      const errorLogPath = path.join(process.env.HOME || process.env.USERPROFILE || '/tmp', '.pm2', 'logs', `${pm2Name}-error.log`);
-      if (fs.existsSync(errorLogPath)) {
-        const logs = fs.readFileSync(errorLogPath, 'utf8');
-        const lastLines = logs.split('\n').slice(-50).filter(line => line.trim());
-        res.status(200).json({ logs: lastLines, source: 'error' });
-      } else {
-        // If no PM2 logs, return recent metrics as logs
-        db.get('SELECT id FROM agents WHERE branch_hash = ?', [branch_hash], (err, agent) => {
-          if (err || !agent) {
-            return res.status(404).json({ error: 'Agent not found' });
+    // First, try to get metrics-based logs (always available if agent exists)
+    db.get('SELECT id, branch_name FROM agents WHERE branch_hash = ?', [branch_hash], (err, agent) => {
+      if (err) {
+        console.error('Error fetching agent for logs:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      if (!agent) {
+        return res.status(404).json({ error: 'Agent not found' });
+      }
+      
+      // Get metrics as logs (always works)
+      db.all(
+        'SELECT decision, price, timestamp, trade_executed, trade_tx_hash FROM metrics WHERE agent_id = ? ORDER BY timestamp DESC LIMIT 100',
+        [agent.id],
+        (metricsErr, metrics) => {
+          if (metricsErr) {
+            console.error('Error fetching metrics:', metricsErr);
+            return res.status(500).json({ error: 'Database error' });
           }
           
-          db.all(
-            'SELECT decision, price, timestamp, trade_executed, trade_tx_hash FROM metrics WHERE agent_id = ? ORDER BY timestamp DESC LIMIT 50',
-            [agent.id],
-            (err, metrics) => {
-              if (err) {
-                return res.status(500).json({ error: 'Database error' });
+          let logLines = [];
+          
+          if (metrics && metrics.length > 0) {
+            // Convert metrics to log-like format
+            logLines = metrics.map(m => {
+              const timestamp = new Date(m.timestamp).toISOString().replace('T', ' ').substring(0, 19);
+              const tradeInfo = m.trade_executed && m.trade_tx_hash ? ` [Trade: ${m.trade_tx_hash.substring(0, 10)}...]` : '';
+              const decisionType = m.decision.includes('BUY') ? '🟢 BUY' : m.decision.includes('HOLD') ? '🟡 HOLD' : m.decision;
+              return `[${timestamp}] ${decisionType} - Price: $${m.price?.toFixed(4) || 'N/A'}${tradeInfo}`;
+            });
+          } else {
+            // No metrics yet
+            logLines = [
+              `[Agent Status] Agent ${agent.branch_name} is running`,
+              `[Info] Waiting for first decision...`,
+              `[Info] Agent makes decisions every 30 seconds`,
+              `[Info] Check back soon for live decision logs`
+            ];
+          }
+          
+          // Try to get PM2 logs if available (non-blocking)
+          try {
+            const pm2Name = branch_hash.replace('0x', '').substring(0, 16);
+            const possibleLogPaths = [
+              path.join(process.env.HOME || process.env.USERPROFILE || '/tmp', '.pm2', 'logs', `${pm2Name}-out.log`),
+              path.join('/tmp', '.pm2', 'logs', `${pm2Name}-out.log`),
+              path.join(process.cwd(), '.pm2', 'logs', `${pm2Name}-out.log`)
+            ];
+            
+            const pm2LogPath = possibleLogPaths.find(p => fs.existsSync(p));
+            if (pm2LogPath) {
+              const pm2Logs = fs.readFileSync(pm2LogPath, 'utf8');
+              const pm2Lines = pm2Logs.split('\n').slice(-50).filter(line => line.trim());
+              if (pm2Lines.length > 0) {
+                // Combine PM2 logs with metrics (PM2 logs first, then metrics)
+                logLines = [...pm2Lines, '', '--- Recent Decisions ---', ...logLines.slice(0, 20)];
               }
-              
-              if (metrics.length === 0) {
-                return res.status(200).json({ 
-                  logs: ['No logs available yet. Agent may be starting up or waiting for first decision.'],
-                  source: 'metrics',
-                  note: 'PM2 logs not available. Showing metrics instead.'
-                });
-              }
-              
-              // Convert metrics to log-like format
-              const logLines = metrics.map(m => {
-                const timestamp = new Date(m.timestamp).toISOString();
-                const tradeInfo = m.trade_executed ? ` [Trade: ${m.trade_tx_hash?.substring(0, 10)}...]` : '';
-                return `[${timestamp}] ${m.decision} - Price: $${m.price?.toFixed(4) || 'N/A'}${tradeInfo}`;
-              });
-              
-              res.status(200).json({ 
-                logs: logLines,
-                source: 'metrics',
-                note: 'PM2 logs not available. Showing recent decisions from metrics.'
-              });
             }
-          );
-        });
-      }
-    }
+          } catch (pm2Err) {
+            // PM2 logs failed, that's okay - use metrics
+          }
+          
+          res.status(200).json({ 
+            logs: logLines,
+            source: metrics && metrics.length > 0 ? 'metrics' : 'info',
+            note: 'Showing agent decisions and activity'
+          });
+        }
+      );
+    });
   } catch (error) {
     console.error('Error getting logs:', error);
-    res.status(500).send('Internal server error');
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
@@ -1712,12 +1759,9 @@ async function recoverAgentsFromBlockchain() {
       });
     });
 
-    if (agentCount > 0) {
-      console.log(`✅ Database has ${agentCount} agent(s), skipping recovery`);
-      return;
-    }
-
-    console.log('🔍 Database is empty, checking blockchain for existing agents...');
+    // Always check for missing agents, not just when DB is empty
+    // This ensures moderate and other agents are recovered even if DB has some agents
+    console.log(`🔍 Checking for missing agents (current count: ${agentCount})...`);
     
     // Known agents to recover (add more as needed)
     const knownAgents = [
@@ -1737,13 +1781,14 @@ async function recoverAgentsFromBlockchain() {
         if (agentAddress && agentAddress !== ethers.ZeroAddress && agentAddress !== "0x0000000000000000000000000000000000000000") {
           // Check if already in DB
           const existing = await new Promise((resolve, reject) => {
-            db.get('SELECT id FROM agents WHERE branch_hash = ?', [branch_hash], (err, row) => {
+            db.get('SELECT id, status FROM agents WHERE branch_hash = ?', [branch_hash], (err, row) => {
               if (err) return reject(err);
               resolve(row);
             });
           });
 
           if (!existing) {
+            console.log(`📋 Agent ${agentInfo.branch_name} found on blockchain but missing in DB, recovering...`);
             // Create DB entry
             const recoveredAgentId = await new Promise((resolve, reject) => {
               db.run(
@@ -1827,6 +1872,16 @@ async function recoverAgentsFromBlockchain() {
     console.error('❌ Error during startup recovery:', error);
   }
 }
+
+// Manual endpoint to check and recover missing agents
+app.post('/api/agents/check-recovery', async (req, res) => {
+  try {
+    await recoverAgentsFromBlockchain();
+    res.json({ success: true, message: 'Recovery check completed' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Start the server
 app.listen(PORT, async () => {
