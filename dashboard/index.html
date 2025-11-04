@@ -1462,8 +1462,9 @@
             if (selectedAgentId && !isRefreshing) {
                 loadLogs();
                 loadStats();
+                loadTrades();
             }
-        }, 5000); // Refresh logs/stats every 5 seconds
+        }, 5000); // Refresh logs/stats/trades every 5 seconds
 
         // Initial load
         loadRepositories();
