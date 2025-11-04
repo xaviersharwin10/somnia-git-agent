@@ -321,14 +321,23 @@ Events: Just the push event</code>
                 return;
             }
 
-            // Validate GitHub URL format
-            if (!repoUrl.includes('github.com') && !repoUrl.includes('.git')) {
-                if (confirm('URL should be like https://github.com/user/repo.git\n\nUse this URL anyway?')) {
-                    window.location.href = `/auth/github?repo_url=${encodeURIComponent(repoUrl)}`;
-                }
-            } else {
-                window.location.href = `/auth/github?repo_url=${encodeURIComponent(repoUrl)}`;
+            // Normalize URL - ensure it has https:// and ends properly
+            let normalizedUrl = repoUrl;
+            if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+                normalizedUrl = 'https://' + normalizedUrl;
             }
+            if (!normalizedUrl.endsWith('.git') && !normalizedUrl.endsWith('/')) {
+                normalizedUrl = normalizedUrl + '.git';
+            }
+
+            // Validate GitHub URL format
+            if (!normalizedUrl.includes('github.com')) {
+                alert('Please enter a valid GitHub repository URL (e.g., https://github.com/username/repo.git)');
+                return;
+            }
+
+            console.log('Redirecting to OAuth with repo URL:', normalizedUrl);
+            window.location.href = `/auth/github?repo_url=${encodeURIComponent(normalizedUrl)}`;
         }
 
         // Auto-fill from URL params if present

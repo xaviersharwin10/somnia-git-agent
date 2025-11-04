@@ -366,30 +366,55 @@ app.get('/auth/github', (req, res) => {
     });
   }
 
-  const state = require('crypto').randomBytes(32).toString('hex');
+  const repoUrl = req.query.repo_url;
+  
+  // Store repo_url in state parameter (GitHub preserves state in callback)
+  // Format: state = base64(JSON.stringify({random: ..., repo_url: ...}))
+  const stateData = {
+    random: require('crypto').randomBytes(32).toString('hex'),
+    repo_url: repoUrl || null
+  };
+  const state = Buffer.from(JSON.stringify(stateData)).toString('base64');
+  
   const redirectUri = `${BACKEND_URL}/auth/github/callback`;
   const scope = 'repo admin:repo_hook'; // Need repo access and webhook management
   
-  // Store state temporarily (in production, use Redis or session)
-  // For now, we'll pass repo_url as query param
-  const repoUrl = req.query.repo_url;
+  console.log(`[OAuth] Initiating OAuth flow with repo_url: ${repoUrl}`);
   
+  // Build GitHub OAuth URL - repo_url is encoded in state
   const githubAuthUrl = `https://github.com/login/oauth/authorize?` +
     `client_id=${GITHUB_CLIENT_ID}` +
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&scope=${encodeURIComponent(scope)}` +
-    `&state=${state}` +
-    (repoUrl ? `&repo_url=${encodeURIComponent(repoUrl)}` : '');
+    `&state=${encodeURIComponent(state)}`;
   
+  console.log(`[OAuth] Redirecting to GitHub OAuth (state contains repo_url)`);
   res.redirect(githubAuthUrl);
 });
 
 // GitHub OAuth callback - receives code, exchanges for token, sets up webhook
 app.get('/auth/github/callback', async (req, res) => {
-  const { code, state, repo_url } = req.query;
+  const { code, state } = req.query;
   
   if (!code) {
     return res.status(400).send('Missing authorization code. <a href="/auth/github">Try again</a>');
+  }
+  
+  // Decode repo_url from state parameter
+  let repo_url = null;
+  if (state) {
+    try {
+      const stateData = JSON.parse(Buffer.from(state, 'base64').toString('utf8'));
+      repo_url = stateData.repo_url || null;
+      console.log(`[OAuth] Decoded repo_url from state: ${repo_url}`);
+    } catch (err) {
+      console.warn(`[OAuth] Could not decode state, trying query param: ${err.message}`);
+      // Fallback to query param (for backwards compatibility)
+      repo_url = req.query.repo_url;
+    }
+  } else {
+    // Fallback to query param
+    repo_url = req.query.repo_url;
   }
 
   try {
@@ -418,8 +443,13 @@ app.get('/auth/github/callback', async (req, res) => {
     // Parse repo URL from query or user's repos
     let targetRepoUrl = repo_url || req.query.repo_url;
     
+    console.log(`[OAuth] Received repo_url from query: ${repo_url}`);
+    console.log(`[OAuth] Received repo_url from req.query.repo_url: ${req.query.repo_url}`);
+    console.log(`[OAuth] Final targetRepoUrl: ${targetRepoUrl}`);
+    
     // If no repo specified, try to find user's repos
     if (!targetRepoUrl) {
+      console.log(`[OAuth] No repo URL provided, trying to get user's repos...`);
       const reposResponse = await axios.get('https://api.github.com/user/repos?per_page=5', {
         headers: { 'Authorization': `token ${access_token}` }
       });
@@ -427,6 +457,7 @@ app.get('/auth/github/callback', async (req, res) => {
       if (reposResponse.data.length > 0) {
         // Use first repo as example
         targetRepoUrl = reposResponse.data[0].clone_url;
+        console.log(`[OAuth] Using first repo from user's account: ${targetRepoUrl}`);
       }
     }
 
@@ -447,13 +478,16 @@ app.get('/auth/github/callback', async (req, res) => {
 
     // Auto-configure webhook if repo URL is known
     if (targetRepoUrl) {
+      console.log(`[OAuth] Starting webhook setup for repo: ${targetRepoUrl}`);
       try {
         // Extract owner/repo from URL (e.g., https://github.com/owner/repo.git or https://github.com/owner/repo)
+        // Handle both https://github.com/owner/repo.git and https://github.com/owner/repo formats
         const match = targetRepoUrl.match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/);
         if (match) {
           const [, owner, repo] = match;
           const repoName = repo.replace(/\.git$/, ''); // Remove .git if present
           
+          console.log(`[OAuth] Parsed repo: owner=${owner}, repo=${repoName}`);
           console.log(`[OAuth] Attempting to set up webhook for ${owner}/${repoName}`);
           
           // First, verify the repo exists and user has access
@@ -599,16 +633,59 @@ app.get('/auth/github/callback', async (req, res) => {
           `);
         }
       } catch (webhookError) {
-        console.error('Error setting up webhook:', webhookError.response?.data || webhookError.message);
+        console.error('[OAuth] Error setting up webhook:');
+        console.error('[OAuth] Error message:', webhookError.message);
+        console.error('[OAuth] Error response:', webhookError.response?.data);
+        console.error('[OAuth] Error status:', webhookError.response?.status);
+        console.error('[OAuth] Target repo URL was:', targetRepoUrl);
         
         // Show user-friendly error message
         const errorData = webhookError.response?.data || {};
         const errorMessage = errorData.message || webhookError.message;
+        const errorStatus = webhookError.response?.status;
+        
+        // If it's a 404, check if it's from repo check or hooks check
+        if (errorStatus === 404) {
+          // Try to extract owner/repo for better error message
+          const match = targetRepoUrl?.match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/);
+          const owner = match ? match[1] : 'unknown';
+          const repoName = match ? match[2].replace(/\.git$/, '') : 'unknown';
+          
+          return res.send(`
+            <h1>⚠️ Repository Not Found</h1>
+            <p>Could not access repository <strong>${owner}/${repoName}</strong></p>
+            <p><strong>Possible reasons:</strong></p>
+            <ul>
+              <li>Repository doesn't exist at this URL</li>
+              <li>You don't have access to this repository</li>
+              <li>Repository is private and OAuth token doesn't have access</li>
+              <li>Repository URL format is incorrect</li>
+            </ul>
+            <p><strong>What was checked:</strong></p>
+            <p>Repo URL: <code>${targetRepoUrl || 'Not provided'}</code></p>
+            <p>Parsed as: <code>${owner}/${repoName}</code></p>
+            <hr>
+            <p><strong>Solution:</strong></p>
+            <p>1. Verify the repository URL is correct: <code>https://github.com/owner/repo.git</code></p>
+            <p>2. Ensure you're the owner or have admin access</p>
+            <p>3. Make sure the repository exists and is accessible</p>
+            <p>4. For private repos, ensure the OAuth app has been granted access</p>
+            <hr>
+            <p><strong>You can still set up the webhook manually:</strong></p>
+            <p>1. Go to: <code>https://github.com/${owner}/${repoName}/settings/hooks</code></p>
+            <p>2. Add webhook URL: <code>https://somnia-git-agent.onrender.com/webhook/github</code></p>
+            <p>3. Content type: <code>application/json</code></p>
+            <p>4. Events: <code>Just the push event</code></p>
+            <hr>
+            <p><a href="/">Home</a> | <a href="/auth/github?repo_url=${encodeURIComponent(targetRepoUrl || '')}">Try Again</a></p>
+          `);
+        }
         
         return res.send(`
           <h1>⚠️ Error Setting Up Webhook</h1>
           <p><strong>Error:</strong> ${errorMessage}</p>
-          <p><strong>Status:</strong> ${webhookError.response?.status || 'Unknown'}</p>
+          <p><strong>Status:</strong> ${errorStatus || 'Unknown'}</p>
+          <p><strong>Repo URL:</strong> <code>${targetRepoUrl || 'Not provided'}</code></p>
           <hr>
           <p><strong>You can still set up the webhook manually:</strong></p>
           <p>1. Go to your repository settings: <code>GitHub → Settings → Webhooks</code></p>
