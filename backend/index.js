@@ -1755,7 +1755,7 @@ app.get('/api/logs/:repo_url/:branch_name', (req, res) => {
 
 // Serve landing page
 // Serve static files (logo, etc.)
-app.use('/logo.jpg', express.static(path.join(__dirname, '..', 'logo.jpg')));
+app.use('/logo.png', express.static(path.join(__dirname, '..', 'logo.png')));
 
 app.get('/', (req, res) => {
   const landingPath = path.join(__dirname, 'landing.html');
