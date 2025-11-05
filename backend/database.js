@@ -33,15 +33,19 @@ function initializeDatabase() {
       });
 
       // Create secrets table
+      // CRITICAL: Store secrets by branch_hash (stable) instead of agent_id (changes on Render redeploy)
+      // This allows secrets to persist even when agents table is wiped and agents get new IDs
       db.run(`
         CREATE TABLE IF NOT EXISTS secrets (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          agent_id INTEGER NOT NULL,
+          agent_id INTEGER,
+          branch_hash TEXT NOT NULL,
           key TEXT NOT NULL,
           encrypted_value TEXT NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY(agent_id) REFERENCES agents(id) ON DELETE CASCADE
+          FOREIGN KEY(agent_id) REFERENCES agents(id) ON DELETE CASCADE,
+          UNIQUE(branch_hash, key)
         )
       `, (err) => {
         if (err) {
