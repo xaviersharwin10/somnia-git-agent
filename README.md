@@ -2,7 +2,7 @@
 
 > **"Vercel for AI Agents"** — Deploy autonomous AI agents to Somnia blockchain with a single `git push`. Each branch = a unique smart contract. Zero friction. Infinite scale.
 
-**🌐 Live Demo:** [Dashboard](https://somnia-git-agent.onrender.com/dashboard) | [Backend API](https://somnia-git-agent.onrender.com) | [CLI on npm](https://www.npmjs.com/package/git-somnia-agent)
+**🌐 Live Demo:** [Dashboard](https://somnia-git-agent.onrender.com/dashboard) | [OAuth to setup webhook](https://somnia-git-agent.onrender.com) | [CLI on npm](https://www.npmjs.com/package/git-somnia-agent)
 
 ---
 
