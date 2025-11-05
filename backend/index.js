@@ -2375,14 +2375,13 @@ async function recoverAgentsFromBlockchain() {
           if (!existing) {
             console.log(`📋 Agent ${agentInfo.branch_name} found on blockchain but missing in DB, recovering...`);
             
-            // Before creating new agent, check if there are any secrets for this branch_hash from old agent IDs
-            // This handles the case where backend redeployed and agent IDs changed
+            // Before creating new agent, check if there are any secrets for this branch_hash
+            // CRITICAL: Query by branch_hash directly (stable) since agent IDs change on Render redeploy
             const oldSecrets = await new Promise((resolve, reject) => {
               db.all(
-                `SELECT s.key, s.encrypted_value 
-                 FROM secrets s 
-                 INNER JOIN agents a ON s.agent_id = a.id 
-                 WHERE a.branch_hash = ?`,
+                `SELECT key, encrypted_value 
+                 FROM secrets 
+                 WHERE branch_hash = ?`,
                 [branch_hash],
                 (err, rows) => {
                   if (err) return reject(err);
