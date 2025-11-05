@@ -299,49 +299,58 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
       console.log(`[startOrReloadAgent] ✅ Added BRANCH_NAME from agent object: ${agent.branch_name}`);
     }
     
+    // Get branch_hash from agent object (it should always be present)
+    const agentBranchHash = agent.branch_hash || (agent.repo_url && agent.branch_name ? ethers.id(agent.repo_url + "/" + agent.branch_name) : null);
+    
     db.all('SELECT key, encrypted_value FROM secrets WHERE agent_id = ?', [agent.id], async (err, rows) => {
       if (err) return reject(err);
       
       // If no secrets found for current agent_id, try to find secrets from old agent_ids with same branch_hash
       if (!rows || rows.length === 0) {
         console.log(`[startOrReloadAgent] No secrets found for agent ID ${agent.id}, checking for secrets from previous agent IDs...`);
-        const oldSecrets = await new Promise((resolve, reject) => {
-          db.all(
-            `SELECT s.key, s.encrypted_value 
-             FROM secrets s 
-             INNER JOIN agents a ON s.agent_id = a.id 
-             WHERE a.branch_hash = ? AND a.id != ?`,
-            [branch_hash, agent.id],
-            (err, rows) => {
-              if (err) return reject(err);
-              resolve(rows || []);
-            }
-          );
-        });
-        
-        if (oldSecrets.length > 0) {
-          console.log(`[startOrReloadAgent] Found ${oldSecrets.length} secret(s) from previous agent ID(s), migrating to agent ID ${agent.id}...`);
-          // Migrate secrets to current agent_id
-          for (const secret of oldSecrets) {
-            await new Promise((resolve, reject) => {
-              db.run(
-                'INSERT OR REPLACE INTO secrets (agent_id, key, encrypted_value) VALUES (?, ?, ?)',
-                [agent.id, secret.key, secret.encrypted_value],
-                (err) => {
-                  if (err) return reject(err);
-                  resolve();
-                }
-              );
-            });
-          }
-          console.log(`[startOrReloadAgent] ✅ Migrated ${oldSecrets.length} secret(s) to agent ID ${agent.id}`);
-          // Re-query secrets after migration
-          rows = await new Promise((resolve, reject) => {
-            db.all('SELECT key, encrypted_value FROM secrets WHERE agent_id = ?', [agent.id], (err, rows) => {
-              if (err) return reject(err);
-              resolve(rows || []);
-            });
+        if (!agentBranchHash) {
+          console.log(`[startOrReloadAgent] ⚠️ Cannot migrate secrets: branch_hash not available for agent ${agent.id}`);
+        } else {
+          const oldSecrets = await new Promise((resolve, reject) => {
+            db.all(
+              `SELECT s.key, s.encrypted_value 
+               FROM secrets s 
+               INNER JOIN agents a ON s.agent_id = a.id 
+               WHERE a.branch_hash = ? AND a.id != ?`,
+              [agentBranchHash, agent.id],
+              (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows || []);
+              }
+            );
           });
+        
+          if (oldSecrets.length > 0) {
+            console.log(`[startOrReloadAgent] Found ${oldSecrets.length} secret(s) from previous agent ID(s), migrating to agent ID ${agent.id}...`);
+            // Migrate secrets to current agent_id
+            for (const secret of oldSecrets) {
+              await new Promise((resolve, reject) => {
+                db.run(
+                  'INSERT OR REPLACE INTO secrets (agent_id, key, encrypted_value) VALUES (?, ?, ?)',
+                  [agent.id, secret.key, secret.encrypted_value],
+                  (err) => {
+                    if (err) return reject(err);
+                    resolve();
+                  }
+                );
+              });
+            }
+            console.log(`[startOrReloadAgent] ✅ Migrated ${oldSecrets.length} secret(s) to agent ID ${agent.id}`);
+            // Re-query secrets after migration
+            rows = await new Promise((resolve, reject) => {
+              db.all('SELECT key, encrypted_value FROM secrets WHERE agent_id = ?', [agent.id], (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows || []);
+              });
+            });
+          } else {
+            console.log(`[startOrReloadAgent] No old secrets found for branch_hash ${agentBranchHash}`);
+          }
         }
       }
       
