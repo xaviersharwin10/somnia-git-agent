@@ -161,7 +161,7 @@ git somnia-agent compare main aggressive-strategy
 
 ## ⚙️ Architecture
 
-![SomniaPush Architecture](somniapush_architecture.png)
+![SomniaPush Architecture](somniapush-architecture.png)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
