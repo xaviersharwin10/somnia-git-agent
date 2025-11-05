@@ -2,7 +2,7 @@
 
 > **"Vercel for AI Agents"** — Deploy autonomous AI agents to Somnia blockchain with a single `git push`. Each branch = a unique smart contract. Zero friction. Infinite scale.
 
-**🌐 Live Demo:** [Dashboard](https://somnia-git-agent.onrender.com/dashboard) | [OAuth to setup webhook](https://somnia-git-agent.onrender.com) | [CLI on npm](https://www.npmjs.com/package/git-somnia-agent)
+**🌐 Live Demo:** [Dashboard](https://somnia-git-agent.onrender.com/dashboard) | [Setup Webhook](https://somnia-git-agent.onrender.com) | [CLI on npm](https://www.npmjs.com/package/git-somnia-agent)
 
 ---
 
@@ -112,7 +112,7 @@ git somnia-agent secrets set AGENT_PRIVATE_KEY=0x-your-key-here
 ```
 
 ### Step 3: Configure Webhook (30 seconds)
-Visit: `https://somnia-git-agent.onrender.com/auth/github?repo_url=https://github.com/YOUR_USERNAME/gitAgent.git`  
+**[🔗 Setup Webhook Automatically](https://somnia-git-agent.onrender.com/auth/github?repo_url=https://github.com/YOUR_USERNAME/gitAgent.git)** (replace `YOUR_USERNAME` with your GitHub username)  
 Click "Authorize" → Webhook automatically configured!
 
 ### Step 4: Deploy (10 seconds)
@@ -252,7 +252,8 @@ git somnia-agent secrets set GROQ_API_KEY=your-key-here
 git somnia-agent secrets set AGENT_PRIVATE_KEY=0x-your-key-here
 
 # 5. Configure webhook (automatic)
-# Visit: https://somnia-git-agent.onrender.com/auth/github?repo_url=https://github.com/YOUR_USERNAME/gitAgent.git
+# Visit and authorize: https://somnia-git-agent.onrender.com/auth/github?repo_url=https://github.com/YOUR_USERNAME/gitAgent.git
+# Or use the webhook setup page: https://somnia-git-agent.onrender.com
 
 # 6. Deploy
 git push origin main
