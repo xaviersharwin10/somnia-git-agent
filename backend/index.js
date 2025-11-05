@@ -2233,7 +2233,7 @@ async function recoverAgentsFromBlockchain() {
                 status: 'deploying'
               };
               
-              // Check if agent directory exists, if not, clone it
+              // Check if agent directory exists, if not, clone it. If exists, pull latest code.
               if (!fs.existsSync(agentPath) || !fs.existsSync(path.join(agentPath, 'agent.ts'))) {
                 console.log(`📥 Agent directory not found for ${agentInfo.branch_name}, cloning from GitHub...`);
                 try {
@@ -2255,6 +2255,23 @@ async function recoverAgentsFromBlockchain() {
                   }
                 } catch (cloneError) {
                   console.warn(`⚠️ Error cloning ${agentInfo.branch_name}:`, cloneError.message);
+                }
+              } else {
+                // Directory exists, pull latest code
+                console.log(`📥 Agent directory exists for ${agentInfo.branch_name}, pulling latest code...`);
+                try {
+                  shell.cd(agentPath);
+                  // Reset any local changes and pull latest from the specific branch
+                  shell.exec('git reset --hard HEAD', { silent: true });
+                  shell.exec(`git fetch origin && git checkout ${agentInfo.branch_name} && git pull origin ${agentInfo.branch_name}`, { silent: true });
+                  // Install dependencies in case of updates
+                  if (fs.existsSync(path.join(agentPath, 'package.json'))) {
+                    shell.exec('npm install', { silent: true });
+                    console.log(`✅ Updated dependencies for ${agentInfo.branch_name}`);
+                  }
+                  console.log(`✅ Pulled latest code for ${agentInfo.branch_name}`);
+                } catch (pullError) {
+                  console.warn(`⚠️ Error pulling latest code for ${agentInfo.branch_name}:`, pullError.message);
                 }
               }
               
