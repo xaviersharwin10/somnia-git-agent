@@ -377,6 +377,7 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
   });
 
   // 2. Define PM2 app configuration
+  // CRITICAL: env is already the resolved secrets object (not a Promise) because of 'await' on line 279
   // Use a safe name (remove 0x prefix and use first 16 chars)
   const pm2Name = branch_hash.replace('0x', '').substring(0, 16);
   
@@ -397,6 +398,7 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
     tsNodePath = 'ts-node';
   }
   
+  // CRITICAL: env is the resolved secrets object (awaited on line 279), so env: env is correct
   const pm2App = {
     name: pm2Name,
     script: path.join(agentPath, 'agent.ts'),
