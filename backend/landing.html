@@ -40,7 +40,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 20px;
+            gap: 12px;
             margin-bottom: 24px;
         }
 
@@ -242,9 +242,14 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="header-logo">
-                <img src="/logo.png" alt="SomniaPush Logo">
-                <h1>SomniaPush</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+                <div class="header-logo" style="margin-bottom: 0;">
+                    <img src="/logo.png" alt="SomniaPush Logo">
+                    <h1>SomniaPush</h1>
+                </div>
+                <a href="/dashboard" class="btn" style="display: inline-block; text-decoration: none; margin: 0;">
+                    📊 View Dashboard
+                </a>
             </div>
             <p>Deploy AI Agents on Somnia with Git Push</p>
             <span class="tagline">git push = on-chain agent deployment</span>

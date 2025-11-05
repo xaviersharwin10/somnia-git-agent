@@ -98,7 +98,7 @@
         .header-logo {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 10px;
             margin-bottom: 8px;
         }
 
@@ -177,12 +177,11 @@
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 20px;
-            padding: 36px;
+            padding: 32px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: var(--shadow-sm);
             position: relative;
             overflow: hidden;
-            min-height: 450px;
             display: flex;
             flex-direction: column;
         }
@@ -274,7 +273,8 @@
             overflow-y: auto;
             scrollbar-width: thin;
             scrollbar-color: var(--accent-primary) var(--bg-secondary);
-            min-height: 350px;
+            min-height: 300px;
+            max-height: 400px;
         }
 
         .agent-list::-webkit-scrollbar {
@@ -605,15 +605,14 @@
             background: #0a0e27;
             border: 1px solid var(--border-color);
             border-radius: 14px;
-            padding: 28px;
+            padding: 20px;
             font-family: 'Courier New', 'Monaco', monospace;
-            font-size: 13px;
-            flex: 1;
+            font-size: 12px;
+            height: 280px;
             overflow-y: auto;
-            line-height: 1.9;
+            line-height: 1.7;
             scrollbar-width: thin;
             scrollbar-color: var(--accent-primary) transparent;
-            min-height: 350px;
         }
 
         .logs-container::-webkit-scrollbar {
@@ -630,12 +629,11 @@
             background: #0a0e27;
             border: 1px solid var(--border-color);
             border-radius: 14px;
-            padding: 28px;
-            flex: 1;
+            padding: 20px;
+            height: 280px;
             overflow-y: auto;
             scrollbar-width: thin;
             scrollbar-color: var(--accent-primary) transparent;
-            min-height: 350px;
         }
 
         .trades-container::-webkit-scrollbar {
@@ -651,14 +649,14 @@
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
             transition: all 0.3s ease;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 16px;
+            gap: 12px;
         }
 
         .trade-item:hover {
@@ -737,10 +735,11 @@
         }
 
         .log-entry {
-            margin-bottom: 6px;
-            padding: 4px 0;
+            margin-bottom: 4px;
+            padding: 2px 0;
             opacity: 0;
             animation: logFadeIn 0.3s ease forwards;
+            font-size: 12px;
         }
 
         @keyframes logFadeIn {
@@ -988,7 +987,7 @@
                 </div>
 
                 <div class="price-display">
-                    <div class="price-label">Current Price</div>
+                    <div class="price-label">Current SOMI Price</div>
                     <div class="price-value" id="currentPrice">$0.0000</div>
                 </div>
 
