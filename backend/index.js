@@ -1694,12 +1694,49 @@ app.post('/api/agents/restart-all', async (req, res) => {
       for (const agent of agents) {
         try {
           const agentPath = path.join(AGENTS_DIR, agent.branch_hash);
-          if (fs.existsSync(path.join(agentPath, 'agent.ts'))) {
-            await startOrReloadAgent(agent, agentPath, agent.branch_hash);
-            results.push({ agent: agent.branch_name, status: 'restarted' });
-          } else {
-            results.push({ agent: agent.branch_name, status: 'skipped', reason: 'agent.ts not found' });
+          if (!fs.existsSync(agentPath)) {
+            // Try to clone if directory doesn't exist
+            console.log(`[RESTART-ALL] Agent directory not found for ${agent.branch_name}, attempting to clone...`);
+            try {
+              shell.mkdir('-p', agentPath);
+              shell.cd(agentPath);
+              const cloneResult = shell.exec(`git clone ${agent.repo_url} . --branch ${agent.branch_name}`, { silent: true });
+              if (cloneResult.code === 0) {
+                console.log(`[RESTART-ALL] ✅ Cloned ${agent.branch_name}`);
+                if (fs.existsSync(path.join(agentPath, 'package.json'))) {
+                  shell.exec('npm install', { silent: true });
+                }
+              } else {
+                results.push({ agent: agent.branch_name, status: 'skipped', reason: 'Failed to clone directory' });
+                continue;
+              }
+            } catch (cloneErr) {
+              results.push({ agent: agent.branch_name, status: 'skipped', reason: `Clone error: ${cloneErr.message}` });
+              continue;
+            }
+          } else if (!fs.existsSync(path.join(agentPath, 'agent.ts'))) {
+            // Directory exists but agent.ts missing - try to pull latest code
+            console.log(`[RESTART-ALL] agent.ts not found for ${agent.branch_name}, pulling latest code...`);
+            try {
+              shell.cd(agentPath);
+              shell.exec('git reset --hard HEAD', { silent: true });
+              shell.exec(`git fetch origin && git checkout ${agent.branch_name} && git pull origin ${agent.branch_name}`, { silent: true });
+              if (fs.existsSync(path.join(agentPath, 'package.json'))) {
+                shell.exec('npm install', { silent: true });
+              }
+              if (!fs.existsSync(path.join(agentPath, 'agent.ts'))) {
+                results.push({ agent: agent.branch_name, status: 'skipped', reason: 'agent.ts still not found after pull' });
+                continue;
+              }
+            } catch (pullErr) {
+              results.push({ agent: agent.branch_name, status: 'skipped', reason: `Pull error: ${pullErr.message}` });
+              continue;
+            }
           }
+          
+          // Now start/reload the agent
+          await startOrReloadAgent(agent, agentPath, agent.branch_hash);
+          results.push({ agent: agent.branch_name, status: 'restarted' });
         } catch (error) {
           results.push({ agent: agent.branch_name, status: 'error', error: error.message });
         }
