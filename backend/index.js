@@ -1679,6 +1679,36 @@ app.get('/api/agents/:id', (req, res) => {
   });
 });
 
+// Restart all agents (useful for fixing issues) - MUST be before /api/agents/:id/restart
+app.post('/api/agents/restart-all', async (req, res) => {
+  try {
+    db.all('SELECT * FROM agents', async (err, agents) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      const results = [];
+      for (const agent of agents) {
+        try {
+          const agentPath = path.join(AGENTS_DIR, agent.branch_hash);
+          if (fs.existsSync(path.join(agentPath, 'agent.ts'))) {
+            await startOrReloadAgent(agent, agentPath, agent.branch_hash);
+            results.push({ agent: agent.branch_name, status: 'restarted' });
+          } else {
+            results.push({ agent: agent.branch_name, status: 'skipped', reason: 'agent.ts not found' });
+          }
+        } catch (error) {
+          results.push({ agent: agent.branch_name, status: 'error', error: error.message });
+        }
+      }
+      
+      res.json({ success: true, results });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/agents/:id/restart', (req, res) => {
   const agentId = req.params.id;
   db.get('SELECT * FROM agents WHERE id = ?', [agentId], async (err, agent) => {
@@ -1753,36 +1783,6 @@ app.post('/api/agents/branch/:branch_hash/restart', (req, res) => {
       res.status(500).json({ error: 'Failed to restart agent', details: error.message });
     }
   });
-});
-
-// Restart all agents (useful for fixing issues)
-app.post('/api/agents/restart-all', async (req, res) => {
-  try {
-    db.all('SELECT * FROM agents', async (err, agents) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      
-      const results = [];
-      for (const agent of agents) {
-        try {
-          const agentPath = path.join(AGENTS_DIR, agent.branch_hash);
-          if (fs.existsSync(path.join(agentPath, 'agent.ts'))) {
-            await startOrReloadAgent(agent, agentPath, agent.branch_hash);
-            results.push({ agent: agent.branch_name, status: 'restarted' });
-          } else {
-            results.push({ agent: agent.branch_name, status: 'skipped', reason: 'agent.ts not found' });
-          }
-        } catch (error) {
-          results.push({ agent: agent.branch_name, status: 'error', error: error.message });
-        }
-      }
-      
-      res.json({ success: true, results });
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
 });
 
 // Stats endpoint
