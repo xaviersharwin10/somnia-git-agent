@@ -112,8 +112,7 @@ git somnia-agent secrets set AGENT_PRIVATE_KEY=0x-your-key-here
 ```
 
 ### Step 3: Configure Webhook (30 seconds)
-**[🔗 Setup Webhook Automatically](https://somnia-git-agent.onrender.com/auth/github?repo_url=https://github.com/YOUR_USERNAME/gitAgent.git)** (replace `YOUR_USERNAME` with your GitHub username)  
-Click "Authorize" → Webhook automatically configured!
+**[🔗 Setup Webhook Automatically](https://somnia-git-agent.onrender.com)** — Enter your repository URL and authorize GitHub. Webhook automatically configured!
 
 ### Step 4: Deploy (10 seconds)
 ```bash
@@ -252,8 +251,8 @@ git somnia-agent secrets set GROQ_API_KEY=your-key-here
 git somnia-agent secrets set AGENT_PRIVATE_KEY=0x-your-key-here
 
 # 5. Configure webhook (automatic)
-# Visit and authorize: https://somnia-git-agent.onrender.com/auth/github?repo_url=https://github.com/YOUR_USERNAME/gitAgent.git
-# Or use the webhook setup page: https://somnia-git-agent.onrender.com
+# Visit: https://somnia-git-agent.onrender.com
+# Enter your repository URL and authorize GitHub
 
 # 6. Deploy
 git push origin main
