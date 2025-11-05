@@ -4,7 +4,7 @@
 
 **🏆 Track:** Infra Agents | **🌐 Live Demo:** [Dashboard](https://somnia-git-agent.onrender.com/dashboard) | [Setup Webhook](https://somnia-git-agent.onrender.com) | [CLI on npm](https://www.npmjs.com/package/git-somnia-agent)
 
-**📦 Submission for:** [Somnia AI Hackathon](https://x.com/SomniaEco) (September 29 - October 28, 2025)
+**📦 Submission for:** [Somnia AI Hackathon](https://dorahacks.io/hackathon/somnia-ai-hackathon/detail) 
 
 ---
 
