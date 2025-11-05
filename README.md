@@ -2,7 +2,9 @@
 
 > **"Vercel for AI Agents"** — Deploy autonomous AI agents to Somnia blockchain with a single `git push`. Each branch = a unique smart contract. Zero friction. Infinite scale.
 
-**🌐 Live Demo:** [Dashboard](https://somnia-git-agent.onrender.com/dashboard) | [Setup Webhook](https://somnia-git-agent.onrender.com) | [CLI on npm](https://www.npmjs.com/package/git-somnia-agent)
+**🏆 Track:** Infra Agents | **🌐 Live Demo:** [Dashboard](https://somnia-git-agent.onrender.com/dashboard) | [Setup Webhook](https://somnia-git-agent.onrender.com) | [CLI on npm](https://www.npmjs.com/package/git-somnia-agent)
+
+**📦 Submission for:** [Somnia AI Hackathon](https://x.com/SomniaEco) (September 29 - October 28, 2025)
 
 ---
 
@@ -288,13 +290,20 @@ Team collaboration with role-based access. Custom deployment pipelines. White-la
 
 ## 📚 Resources
 
+### Live Links
 - **Live Dashboard**: [https://somnia-git-agent.onrender.com/dashboard](https://somnia-git-agent.onrender.com/dashboard)
-- **Backend API**: [https://somnia-git-agent.onrender.com](https://somnia-git-agent.onrender.com)
+- **Setup Webhook**: [https://somnia-git-agent.onrender.com](https://somnia-git-agent.onrender.com)
+
+### Repositories
+- **Platform Repository**: [https://github.com/xaviersharwin10/somnia-git-agent](https://github.com/xaviersharwin10/somnia-git-agent)
 - **Agent Template**: [https://github.com/xaviersharwin10/gitAgent](https://github.com/xaviersharwin10/gitAgent)
-- **Platform Repo**: [https://github.com/xaviersharwin10/somnia-git-agent](https://github.com/xaviersharwin10/somnia-git-agent)
+
+### Tools & Documentation
 - **CLI Package**: [npmjs.com/package/git-somnia-agent](https://www.npmjs.com/package/git-somnia-agent)
-- **Somnia Docs**: [docs.somnia.network](https://docs.somnia.network)
-- **Somnia Testnet**: [testnet.somnia.network](https://testnet.somnia.network)
+
+### Hackathon Submission Materials
+- **Demo Video**: [Link to be added - 5-minute walkthrough] 🎥
+- **Pitch Deck**: [Link to be added - 5-10 slides] 📊
 
 ---
 
