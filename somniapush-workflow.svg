@@ -1,0 +1,274 @@
+<svg viewBox="0 0 1400 1000" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f5576c;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#43e97b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#38f9d7;stop-opacity:1" />
+    </linearGradient>
+    
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.2"/>
+    </filter>
+    
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#667eea" />
+    </marker>
+    
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#43e97b" />
+    </marker>
+  </defs>
+  
+  <!-- Title Section -->
+  <text x="700" y="35" font-family="Arial, sans-serif" font-size="28" font-weight="bold" text-anchor="middle" fill="#1a202c">
+    SomniaPush: "Vercel for AI Agents"
+  </text>
+  <text x="700" y="60" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#4a5568">
+    Git Push → Smart Contract → Live AI Agent in 30 Seconds
+  </text>
+  
+  <!-- Value Props Box -->
+  <rect x="50" y="80" width="1300" height="50" rx="8" fill="#f7fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="100" y="110" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#2d3748">
+    🚀 10x Faster (30s vs 5min) | 💰 90% Cost Reduction | 🔄 A/B Test 10 Strategies in Parallel | 🔒 Enterprise Security
+  </text>
+  
+  <!-- LAYER 1: Git Workflow -->
+  <rect x="50" y="160" width="1300" height="140" rx="10" fill="url(#grad1)" opacity="0.1" stroke="#667eea" stroke-width="2"/>
+  <text x="70" y="185" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#667eea">
+    Layer 1: Developer Workflow (2 minutes)
+  </text>
+  
+  <!-- Git Branches -->
+  <g filter="url(#shadow)">
+    <rect x="100" y="205" width="180" height="70" rx="8" fill="white" stroke="#667eea" stroke-width="2"/>
+    <text x="190" y="228" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle" fill="#1a202c">git branch: main</text>
+    <text x="190" y="248" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#4a5568">Strategy: Moderate</text>
+    <text x="190" y="265" font-family="monospace" font-size="10" text-anchor="middle" fill="#38a169">git push origin main</text>
+  </g>
+  
+  <g filter="url(#shadow)">
+    <rect x="320" y="205" width="180" height="70" rx="8" fill="white" stroke="#667eea" stroke-width="2"/>
+    <text x="410" y="228" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle" fill="#1a202c">git branch: aggressive</text>
+    <text x="410" y="248" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#4a5568">Strategy: High Risk</text>
+    <text x="410" y="265" font-family="monospace" font-size="10" text-anchor="middle" fill="#38a169">git push origin aggressive</text>
+  </g>
+  
+  <g filter="url(#shadow)">
+    <rect x="540" y="205" width="180" height="70" rx="8" fill="white" stroke="#667eea" stroke-width="2"/>
+    <text x="630" y="228" font-family="monospace" font-size="12" font-weight="bold" text-anchor="middle" fill="#1a202c">git branch: conservative</text>
+    <text x="630" y="248" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#4a5568">Strategy: Low Risk</text>
+    <text x="630" y="265" font-family="monospace" font-size="10" text-anchor="middle" fill="#38a169">git push origin conservative</text>
+  </g>
+  
+  <!-- CLI Tool -->
+  <g filter="url(#shadow)">
+    <rect x="880" y="205" width="440" height="70" rx="8" fill="white" stroke="#667eea" stroke-width="2"/>
+    <text x="1100" y="228" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#1a202c">Developer CLI</text>
+    <text x="900" y="248" font-family="monospace" font-size="10" fill="#4a5568">$ git somnia-agent init</text>
+    <text x="900" y="263" font-family="monospace" font-size="10" fill="#4a5568">$ git somnia-agent secrets set</text>
+    <text x="1160" y="248" font-family="monospace" font-size="10" fill="#4a5568">$ git somnia-agent stats</text>
+    <text x="1160" y="263" font-family="monospace" font-size="10" fill="#4a5568">$ git somnia-agent compare</text>
+  </g>
+  
+  <!-- Arrows from Layer 1 to Layer 2 -->
+  <line x1="190" y1="275" x2="190" y2="335" stroke="#667eea" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <line x1="410" y1="275" x2="410" y2="335" stroke="#667eea" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <line x1="630" y1="275" x2="630" y2="335" stroke="#667eea" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- Background for text -->
+  <rect x="600" y="300" width="200" height="25" rx="5" fill="white" stroke="#667eea" stroke-width="1"/>
+  <text x="700" y="317" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#667eea">
+    ⚡ GitHub Webhook Auto-Trigger
+  </text>
+  
+  <!-- LAYER 2: Smart Contract Deployment -->
+  <rect x="50" y="340" width="1300" height="140" rx="10" fill="url(#grad2)" opacity="0.1" stroke="#f5576c" stroke-width="2"/>
+  <text x="70" y="365" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#f5576c">
+    Layer 2: Somnia Blockchain (30 seconds)
+  </text>
+  
+  <!-- AgentFactory -->
+  <g filter="url(#shadow)">
+    <rect x="750" y="385" width="200" height="70" rx="8" fill="white" stroke="#f5576c" stroke-width="2"/>
+    <text x="850" y="410" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#1a202c">AgentFactory.sol</text>
+    <text x="850" y="428" font-family="monospace" font-size="10" text-anchor="middle" fill="#4a5568">0x...Factory</text>
+    <text x="850" y="445" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#805ad5">Deploy Agent Contracts</text>
+  </g>
+  
+  <!-- Smart Contracts -->
+  <g filter="url(#shadow)">
+    <rect x="100" y="385" width="180" height="70" rx="8" fill="white" stroke="#f5576c" stroke-width="2"/>
+    <text x="190" y="408" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#1a202c">Agent.sol (main)</text>
+    <text x="190" y="425" font-family="monospace" font-size="9" text-anchor="middle" fill="#4a5568">0x3821...BEF67</text>
+    <text x="190" y="440" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#38a169">✓ Deployed</text>
+    <text x="190" y="452" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#805ad5">Holds SOMI tokens</text>
+  </g>
+  
+  <g filter="url(#shadow)">
+    <rect x="320" y="385" width="180" height="70" rx="8" fill="white" stroke="#f5576c" stroke-width="2"/>
+    <text x="410" y="408" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#1a202c">Agent.sol (aggressive)</text>
+    <text x="410" y="425" font-family="monospace" font-size="9" text-anchor="middle" fill="#4a5568">0x7B9A...C3D21</text>
+    <text x="410" y="440" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#38a169">✓ Deployed</text>
+    <text x="410" y="452" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#805ad5">Holds SOMI tokens</text>
+  </g>
+  
+  <g filter="url(#shadow)">
+    <rect x="540" y="385" width="180" height="70" rx="8" fill="white" stroke="#f5576c" stroke-width="2"/>
+    <text x="630" y="408" font-family="Arial, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="#1a202c">Agent.sol (conservative)</text>
+    <text x="630" y="425" font-family="monospace" font-size="9" text-anchor="middle" fill="#4a5568">0x4F2C...A8E94</text>
+    <text x="630" y="440" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#38a169">✓ Deployed</text>
+    <text x="630" y="452" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" fill="#805ad5">Holds SOMI tokens</text>
+  </g>
+  
+  <!-- Arrows from Layer 2 to Layer 3 -->
+  <line x1="190" y1="455" x2="190" y2="515" stroke="#f5576c" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <line x1="410" y1="455" x2="410" y2="515" stroke="#f5576c" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <line x1="630" y1="455" x2="630" y2="515" stroke="#f5576c" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- Background for text -->
+  <rect x="600" y="477" width="200" height="25" rx="5" fill="white" stroke="#f5576c" stroke-width="1"/>
+  <text x="700" y="494" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#f5576c">
+    🔗 On-Chain Identity Created
+  </text>
+  
+  <!-- LAYER 3: Agent Execution -->
+  <rect x="50" y="520" width="1300" height="160" rx="10" fill="url(#grad3)" opacity="0.1" stroke="#00f2fe" stroke-width="2"/>
+  <text x="70" y="545" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#0891b2">
+    Layer 3: AI Agent Execution (Real-time)
+  </text>
+  
+  <!-- Running Agents -->
+  <g filter="url(#shadow)">
+    <rect x="100" y="565" width="180" height="90" rx="8" fill="white" stroke="#0891b2" stroke-width="2"/>
+    <text x="190" y="588" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#1a202c">Agent: main</text>
+    <circle cx="168" cy="602" r="4" fill="#38a169"/>
+    <text x="176" y="606" font-family="Arial, sans-serif" font-size="10" fill="#38a169">Running</text>
+    <text x="190" y="623" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#4a5568">Decisions: 150</text>
+    <text x="190" y="637" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#4a5568">BUY signals: 45</text>
+    <text x="190" y="651" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2563eb">Trades: 12 ✓</text>
+  </g>
+  
+  <g filter="url(#shadow)">
+    <rect x="320" y="565" width="180" height="90" rx="8" fill="white" stroke="#0891b2" stroke-width="2"/>
+    <text x="410" y="588" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#1a202c">Agent: aggressive</text>
+    <circle cx="378" cy="602" r="4" fill="#38a169"/>
+    <text x="386" y="606" font-family="Arial, sans-serif" font-size="10" fill="#38a169">Running</text>
+    <text x="410" y="623" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#4a5568">Decisions: 150</text>
+    <text x="410" y="637" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#4a5568">BUY signals: 67</text>
+    <text x="410" y="651" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2563eb">Trades: 18 ✓</text>
+  </g>
+  
+  <g filter="url(#shadow)">
+    <rect x="540" y="565" width="180" height="90" rx="8" fill="white" stroke="#0891b2" stroke-width="2"/>
+    <text x="630" y="588" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#1a202c">Agent: conservative</text>
+    <circle cx="590" cy="602" r="4" fill="#38a169"/>
+    <text x="598" y="606" font-family="Arial, sans-serif" font-size="10" fill="#38a169">Running</text>
+    <text x="630" y="623" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#4a5568">Decisions: 150</text>
+    <text x="630" y="637" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#4a5568">BUY signals: 28</text>
+    <text x="630" y="651" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2563eb">Trades: 7 ✓</text>
+  </g>
+  
+  <!-- AI Decision Engine -->
+  <g filter="url(#shadow)">
+    <rect x="900" y="565" width="400" height="90" rx="8" fill="white" stroke="#0891b2" stroke-width="2"/>
+    <text x="1100" y="590" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#1a202c">AI Decision Engine</text>
+    <text x="920" y="613" font-family="Arial, sans-serif" font-size="10" fill="#4a5568">🤖 Groq LLM (Claude/GPT-4)</text>
+    <text x="920" y="630" font-family="Arial, sans-serif" font-size="10" fill="#4a5568">📊 Price Feed: CoinGecko API</text>
+    <text x="920" y="647" font-family="Arial, sans-serif" font-size="10" fill="#4a5568">⏱️ Decision cycle: Every 30s</text>
+    <text x="1165" y="613" font-family="Arial, sans-serif" font-size="10" fill="#805ad5">🎯 Output: BUY/HOLD</text>
+    <text x="1165" y="630" font-family="Arial, sans-serif" font-size="10" fill="#805ad5">📈 Analysis: Market trends</text>
+    <text x="1165" y="647" font-family="Arial, sans-serif" font-size="10" fill="#805ad5">🔐 Encrypted secrets</text>
+  </g>
+  
+  <!-- Arrows from Layer 3 to Layer 4 -->
+  <line x1="190" y1="655" x2="190" y2="715" stroke="#0891b2" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <line x1="410" y1="655" x2="410" y2="715" stroke="#0891b2" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <line x1="630" y1="655" x2="630" y2="715" stroke="#0891b2" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- Background for text -->
+  <rect x="560" y="677" width="280" height="25" rx="5" fill="white" stroke="#0891b2" stroke-width="1"/>
+  <text x="700" y="694" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#0891b2">
+    🤖 AI Decision: BUY Signal → Execute Trade
+  </text>
+  
+  <!-- LAYER 4: DeFi Integration -->
+  <rect x="50" y="720" width="1300" height="140" rx="10" fill="url(#grad4)" opacity="0.1" stroke="#38f9d7" stroke-width="2"/>
+  <text x="70" y="745" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#059669">
+    Layer 4: DeFi Trading (On-chain)
+  </text>
+  
+  <!-- DEX Swaps -->
+  <g filter="url(#shadow)">
+    <rect x="100" y="765" width="180" height="70" rx="8" fill="white" stroke="#059669" stroke-width="2"/>
+    <text x="190" y="790" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#1a202c">Somnia DEX Swap</text>
+    <text x="190" y="808" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#4a5568">NIA → USDT</text>
+    <text x="190" y="825" font-family="monospace" font-size="9" text-anchor="middle" fill="#2563eb">TX: 0xAB12...CD34</text>
+  </g>
+  
+  <g filter="url(#shadow)">
+    <rect x="320" y="765" width="180" height="70" rx="8" fill="white" stroke="#059669" stroke-width="2"/>
+    <text x="410" y="790" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#1a202c">Somnia DEX Swap</text>
+    <text x="410" y="808" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#4a5568">NIA → USDT</text>
+    <text x="410" y="825" font-family="monospace" font-size="9" text-anchor="middle" fill="#2563eb">TX: 0xEF56...GH78</text>
+  </g>
+  
+  <g filter="url(#shadow)">
+    <rect x="540" y="765" width="180" height="70" rx="8" fill="white" stroke="#059669" stroke-width="2"/>
+    <text x="630" y="790" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#1a202c">Somnia DEX Swap</text>
+    <text x="630" y="808" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#4a5568">NIA → USDT</text>
+    <text x="630" y="825" font-family="monospace" font-size="9" text-anchor="middle" fill="#2563eb">TX: 0xIJ90...KL12</text>
+  </g>
+  
+  <!-- Transaction Explorer & Dashboard -->
+  <g filter="url(#shadow)">
+    <rect x="900" y="765" width="190" height="70" rx="8" fill="white" stroke="#059669" stroke-width="2"/>
+    <text x="995" y="790" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#1a202c">Live Dashboard</text>
+    <text x="995" y="808" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#4a5568">Real-time Metrics</text>
+    <text x="995" y="822" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2563eb">Performance Charts</text>
+  </g>
+  
+  <g filter="url(#shadow)">
+    <rect x="1110" y="765" width="190" height="70" rx="8" fill="white" stroke="#059669" stroke-width="2"/>
+    <text x="1205" y="790" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#1a202c">Somnia Explorer</text>
+    <text x="1205" y="808" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#4a5568">Contract Verification</text>
+    <text x="1205" y="822" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#2563eb">On-chain Audit Trail</text>
+  </g>
+  
+  <!-- Bottom Stats Box -->
+  <rect x="50" y="880" width="1300" height="80" rx="10" fill="#f7fafc" stroke="#e2e8f0" stroke-width="2" filter="url(#shadow)"/>
+  <text x="700" y="910" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#1a202c">
+    🎯 Production Stats (Live on Somnia Testnet)
+  </text>
+  <text x="180" y="935" font-family="Arial, sans-serif" font-size="13" text-anchor="middle" fill="#2d3748">
+    ✅ 5+ Active Agents
+  </text>
+  <text x="420" y="935" font-family="Arial, sans-serif" font-size="13" text-anchor="middle" fill="#2d3748">
+    📊 100+ Trades Executed
+  </text>
+  <text x="700" y="935" font-family="Arial, sans-serif" font-size="13" text-anchor="middle" fill="#2d3748">
+    🔄 3+ Parallel Strategies
+  </text>
+  <text x="980" y="935" font-family="Arial, sans-serif" font-size="13" text-anchor="middle" fill="#2d3748">
+    ⚡ Zero Downtime
+  </text>
+  <text x="1220" y="935" font-family="Arial, sans-serif" font-size="13" text-anchor="middle" fill="#2d3748">
+    🔗 100% On-chain
+  </text>
+  
+  <!-- Footer -->
+  <text x="700" y="980" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#718096">
+    Traditional Deployment: 2-3 hours | SomniaPush: 5 minutes | Time Saved: 95%
+  </text>
+</svg>
