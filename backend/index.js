@@ -2338,6 +2338,27 @@ async function recoverAgentsFromBlockchain() {
 
           if (!existing) {
             console.log(`📋 Agent ${agentInfo.branch_name} found on blockchain but missing in DB, recovering...`);
+            
+            // Before creating new agent, check if there are any secrets for this branch_hash from old agent IDs
+            // This handles the case where backend redeployed and agent IDs changed
+            const oldSecrets = await new Promise((resolve, reject) => {
+              db.all(
+                `SELECT s.key, s.encrypted_value 
+                 FROM secrets s 
+                 INNER JOIN agents a ON s.agent_id = a.id 
+                 WHERE a.branch_hash = ?`,
+                [branch_hash],
+                (err, rows) => {
+                  if (err) return reject(err);
+                  resolve(rows || []);
+                }
+              );
+            });
+            
+            if (oldSecrets.length > 0) {
+              console.log(`📋 Found ${oldSecrets.length} secret(s) for ${agentInfo.branch_name} from previous agent, will migrate after recovery`);
+            }
+            
             // Create DB entry
             const recoveredAgentId = await new Promise((resolve, reject) => {
               db.run(
@@ -2351,6 +2372,24 @@ async function recoverAgentsFromBlockchain() {
             });
             
             console.log(`✅ Recovered agent: ${agentInfo.branch_name} (${agentAddress})`);
+            
+            // Migrate secrets from old agent_id to new agent_id if they exist
+            if (oldSecrets.length > 0) {
+              console.log(`🔄 Migrating ${oldSecrets.length} secret(s) to new agent ID ${recoveredAgentId}...`);
+              for (const secret of oldSecrets) {
+                await new Promise((resolve, reject) => {
+                  db.run(
+                    'INSERT OR REPLACE INTO secrets (agent_id, key, encrypted_value) VALUES (?, ?, ?)',
+                    [recoveredAgentId, secret.key, secret.encrypted_value],
+                    (err) => {
+                      if (err) return reject(err);
+                      resolve();
+                    }
+                  );
+                });
+              }
+              console.log(`✅ Migrated ${oldSecrets.length} secret(s) for ${agentInfo.branch_name}`);
+            }
             
             // Auto-start recovered agent
             try {
