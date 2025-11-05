@@ -2288,13 +2288,20 @@ app.get('/api/secrets/check/:branch_hash', (req, res) => {
         return res.status(404).json({ error: 'Agent not found' });
       }
 
-      // Get all secrets for this agent
-      db.all('SELECT key FROM secrets WHERE agent_id = ?', [agent.id], (err, rows) => {
-        if (err) {
-          return res.status(500).json({ error: 'Database error' });
-        }
+      // Get all secrets for this agent (current agent_id)
+      // Also check for secrets from old agent IDs with same branch_hash (migration scenario)
+      db.all(
+        `SELECT DISTINCT s.key 
+         FROM secrets s 
+         INNER JOIN agents a ON s.agent_id = a.id 
+         WHERE a.branch_hash = ?`,
+        [branch_hash],
+        (err, rows) => {
+          if (err) {
+            return res.status(500).json({ error: 'Database error' });
+          }
 
-        const setSecrets = new Set(rows.map(row => row.key));
+          const setSecrets = new Set(rows.map(row => row.key));
         const requiredStatus = REQUIRED_SECRETS.map(key => ({
           key,
           set: setSecrets.has(key),
