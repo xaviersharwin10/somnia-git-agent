@@ -16,6 +16,8 @@ SomniaPush is a **Git-native deployment platform** that transforms AI agent deve
 **Setup time:** 5 minutes (vs hours for manual deployment)  
 **Cost reduction:** 90% less time spent on deployment vs manual setup
 
+![SomniaPush Workflow](somniapush-workflow.svg)
+
 ---
 
 ## 💡 Value Proposition
@@ -158,6 +160,8 @@ git somnia-agent compare main aggressive-strategy
 ---
 
 ## ⚙️ Architecture
+
+![SomniaPush Architecture](somniapush_architecture.png)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
