@@ -316,6 +316,9 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
       console.log(`[startOrReloadAgent] Final env keys: ${Object.keys(secrets).join(', ')}`);
       console.log(`[startOrReloadAgent] REPO_URL: ${secrets.REPO_URL || '❌ EMPTY - AGENT WILL NOT SEND METRICS'}`);
       console.log(`[startOrReloadAgent] BRANCH_NAME: ${secrets.BRANCH_NAME || '❌ EMPTY'}`);
+      console.log(`[startOrReloadAgent] GROQ_API_KEY: ${secrets.GROQ_API_KEY ? '✅ SET' : '❌ NOT SET - AGENT WILL CRASH'}`);
+      console.log(`[startOrReloadAgent] AGENT_PRIVATE_KEY: ${secrets.AGENT_PRIVATE_KEY ? '✅ SET' : '❌ NOT SET'}`);
+      console.log(`[startOrReloadAgent] Agent ID: ${agent.id}, Branch: ${agent.branch_name}`);
       resolve(secrets);
     });
   });
