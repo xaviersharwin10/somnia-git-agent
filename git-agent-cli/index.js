@@ -364,7 +364,21 @@ program
     const s1 = result1.stats;
     const s2 = result2.stats;
 
-    console.log(chalk.bold('\n--- Side-by-Side Agent Comparison ---\n'));
+    // Helper function to strip ANSI codes for width calculation
+    const stripAnsi = (str) => str.replace(/\u001b\[[0-9;]*m/g, '');
+    
+    // Helper function to pad string accounting for ANSI codes
+    const padWithAnsi = (str, width) => {
+      const visibleLength = stripAnsi(str).length;
+      const padding = Math.max(0, width - visibleLength);
+      return str + ' '.repeat(padding);
+    };
+
+    console.log(chalk.bold('\n╔═════════════════════╦═══════════════════════════╦════════════════════════════╗'));
+    const titleText = '  Side-by-Side Agent Comparison';
+    const titlePadding = 78 - titleText.length; // 77 total width minus title and borders
+    console.log(chalk.bold(`║${titleText}${' '.repeat(titlePadding)}║`));
+    console.log(chalk.bold('╠═════════════════════╬═══════════════════════════╬════════════════════════════╣'));
     
     // Create comparison table
     const metrics = [
@@ -380,14 +394,22 @@ program
       },
     ];
 
-    console.log(`| ${'Metric'.padEnd(18)} | ${chalk.bold(branch1.padEnd(25))} | ${chalk.bold(branch2.padEnd(25))} |`);
-    console.log('|' + '-'.repeat(20) + '|' + '-'.repeat(27) + '|' + '-'.repeat(27) + '|');
+    // Header row
+    const headerMetric = padWithAnsi('Metric', 19);
+    const header1 = padWithAnsi(chalk.bold(branch1), 27);
+    const header2 = padWithAnsi(chalk.bold(branch2), 27);
+    console.log(`║ ${headerMetric}║ ${header1}║ ${header2}║`);
+    console.log(chalk.bold('╠═════════════════════╬═══════════════════════════╬═══════════════════════════╣'));
     
-    metrics.forEach(m => {
-      const v1Str = m.format(m.v1);
-      const v2Str = m.format(m.v2);
-      console.log(`| ${m.label.padEnd(18)} | ${v1Str.padEnd(25)} | ${v2Str.padEnd(25)} |`);
+    // Data rows
+    metrics.forEach((m, idx) => {
+      const label = padWithAnsi(m.label, 19);
+      const v1Str = padWithAnsi(m.format(m.v1), 27);
+      const v2Str = padWithAnsi(m.format(m.v2), 27);
+      console.log(`║ ${label}║ ${v1Str}║ ${v2Str}║`);
     });
+    
+    console.log(chalk.bold('╚═════════════════════╩═══════════════════════════╩════════════════════════════╝'));
 
     // Determine winner
     console.log('\n' + chalk.bold('🏆 Winner Analysis:'));
