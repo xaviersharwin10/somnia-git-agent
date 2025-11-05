@@ -2376,9 +2376,23 @@ async function recoverAgentsFromBlockchain() {
 // Manual endpoint to check and recover missing agents
 app.post('/api/agents/check-recovery', async (req, res) => {
   try {
+    console.log('[RECOVERY] Manual recovery triggered via API');
     await recoverAgentsFromBlockchain();
     res.json({ success: true, message: 'Recovery check completed' });
   } catch (error) {
+    console.error('[RECOVERY] Error during manual recovery:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Alternative: GET endpoint for easier triggering
+app.get('/api/agents/check-recovery', async (req, res) => {
+  try {
+    console.log('[RECOVERY] Manual recovery triggered via GET API');
+    await recoverAgentsFromBlockchain();
+    res.json({ success: true, message: 'Recovery check completed' });
+  } catch (error) {
+    console.error('[RECOVERY] Error during manual recovery:', error);
     res.status(500).json({ error: error.message });
   }
 });
