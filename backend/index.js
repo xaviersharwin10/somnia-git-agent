@@ -1040,7 +1040,9 @@ app.post('/webhook/github', (req, res) => {
             if (dirExists) {
               console.log(`Agent directory exists. Pulling latest code...`);
               shell.cd(agentPath);
-              shell.exec('git pull');
+              // Reset any local changes and pull latest from the specific branch
+              shell.exec('git reset --hard HEAD');
+              shell.exec(`git fetch origin && git checkout ${branch_name} && git pull origin ${branch_name}`);
               shell.exec('npm install');
             } else {
               console.log(`Cloning repository...`);
@@ -1227,7 +1229,9 @@ app.post('/webhook/github/push', async (req, res) => {
               // --- 1. AGENT EXISTS: UPDATE (PULL) ---
               console.log(`Agent for ${branch_name} already exists. Pulling latest code...`);
               shell.cd(agentPath);
-              shell.exec('git pull');
+              // Reset any local changes and pull latest from the specific branch
+              shell.exec('git reset --hard HEAD');
+              shell.exec(`git fetch origin && git checkout ${branch_name} && git pull origin ${branch_name}`);
               shell.exec('npm install'); // Re-run install for any new dependencies
 
               // Now, reload the process with secrets
@@ -1249,7 +1253,9 @@ app.post('/webhook/github/push', async (req, res) => {
           // --- 1. AGENT EXISTS IN DB: UPDATE (PULL) ---
           console.log(`Agent for ${branch_name} already exists. Pulling latest code...`);
           shell.cd(agentPath);
-          shell.exec('git pull');
+          // Reset any local changes and pull latest from the specific branch
+          shell.exec('git reset --hard HEAD');
+          shell.exec(`git fetch origin && git checkout ${branch_name} && git pull origin ${branch_name}`);
           shell.exec('npm install'); // Re-run install for any new dependencies
 
           // Now, reload the process with secrets
@@ -1312,7 +1318,9 @@ app.post('/webhook/github/push', async (req, res) => {
             if (dirExists) {
               console.log(`Agent directory exists. Pulling latest code...`);
               shell.cd(agentPath);
-              shell.exec('git pull');
+              // Reset any local changes and pull latest from the specific branch
+              shell.exec('git reset --hard HEAD');
+              shell.exec(`git fetch origin && git checkout ${branch_name} && git pull origin ${branch_name}`);
               shell.exec('npm install');
             } else {
               console.log(`Cloning repository...`);
