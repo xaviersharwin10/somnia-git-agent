@@ -1958,32 +1958,61 @@ app.get('/api/logs/:branch_hash', (req, res) => {
             ];
           }
           
-          // Try to get PM2 logs if available (non-blocking)
-          try {
-            const pm2Name = branch_hash.replace('0x', '').substring(0, 16);
-            const possibleLogPaths = [
-              path.join(process.env.HOME || process.env.USERPROFILE || '/tmp', '.pm2', 'logs', `${pm2Name}-out.log`),
-              path.join('/tmp', '.pm2', 'logs', `${pm2Name}-out.log`),
-              path.join(process.cwd(), '.pm2', 'logs', `${pm2Name}-out.log`)
-            ];
-            
-            const pm2LogPath = possibleLogPaths.find(p => fs.existsSync(p));
-            if (pm2LogPath) {
-              const pm2Logs = fs.readFileSync(pm2LogPath, 'utf8');
-              const pm2Lines = pm2Logs.split('\n').slice(-50).filter(line => line.trim());
-              if (pm2Lines.length > 0) {
-                // Combine PM2 logs with metrics (PM2 logs first, then metrics)
-                logLines = [...pm2Lines, '', '--- Recent Decisions ---', ...logLines.slice(0, 20)];
+          // Try to get PM2 logs synchronously (for Render compatibility)
+          const pm2Name = branch_hash.replace('0x', '').substring(0, 16);
+          const possibleLogPaths = [
+            path.join('/tmp', '.pm2', 'logs', `${pm2Name}-out.log`),
+            path.join(process.cwd(), '.pm2', 'logs', `${pm2Name}-out.log`),
+            path.join('/opt/render/project/src/backend/.pm2', 'logs', `${pm2Name}-out.log`),
+            path.join(process.env.HOME || '/tmp', '.pm2', 'logs', `${pm2Name}-out.log`)
+          ];
+          
+          let pm2LogLines = [];
+          for (const logPath of possibleLogPaths) {
+            try {
+              if (fs.existsSync(logPath)) {
+                const pm2Logs = fs.readFileSync(logPath, 'utf8');
+                pm2LogLines = pm2Logs.split('\n')
+                  .slice(-150) // Get last 150 lines
+                  .filter(line => {
+                    const trimmed = line.trim();
+                    return trimmed && 
+                           !trimmed.includes('PM2') && 
+                           !trimmed.includes('God') &&
+                           !trimmed.includes('pid:') &&
+                           trimmed.length > 10; // Filter out noise
+                  });
+                if (pm2LogLines.length > 0) {
+                  console.log(`[Logs] Found PM2 logs at: ${logPath} (${pm2LogLines.length} lines)`);
+                  break; // Use first found log file
+                }
               }
+            } catch (logErr) {
+              // Continue to next path
             }
-          } catch (pm2Err) {
-            // PM2 logs failed, that's okay - use metrics
+          }
+          
+          // Combine PM2 logs with metrics (PM2 logs first, then recent decisions)
+          if (pm2LogLines.length > 0) {
+            logLines = [
+              '--- Agent Console Logs (PM2) ---',
+              ...pm2LogLines.slice(-80), // Last 80 lines of PM2 logs
+              '',
+              '--- Recent Decisions (from Metrics) ---',
+              ...logLines.slice(0, 20)
+            ];
+          } else {
+            // No PM2 logs found, add a note
+            logLines.unshift('[Note] PM2 console logs not available. Showing decision metrics only.');
+            logLines.unshift('[Info] To see full logs including trade execution details, check Render dashboard.');
           }
           
           res.status(200).json({ 
             logs: logLines,
-            source: metrics && metrics.length > 0 ? 'metrics' : 'info',
-            note: 'Showing agent decisions and activity'
+            source: pm2LogLines.length > 0 ? 'pm2' : (metrics && metrics.length > 0 ? 'metrics' : 'info'),
+            note: pm2LogLines.length > 0 
+              ? 'Showing PM2 console logs and recent decisions' 
+              : 'Showing agent decisions (PM2 logs not available - check Render dashboard for full logs)'
           });
         }
       );
