@@ -139,11 +139,15 @@ program
   });
 
 /**
- * 2. SECRETS SET
- * Securely sets a secret for the current branch
+ * 2. SECRETS - Create a command group for secrets
  */
-program
-  .command('secrets set <KEY_VALUE>')
+const secretsCommand = program
+  .command('secrets')
+  .description('Manage secrets for the current branch');
+
+// SECRETS SET - Set a secret
+secretsCommand
+  .command('set <KEY_VALUE>')
   .description('Set a secret for the current branch (e.g., KEY=VALUE)')
   .action(async (keyValue) => {
     // Handle the case where commander might parse this incorrectly
@@ -181,12 +185,9 @@ program
     }
   });
 
-/**
- * 3. SECRETS CHECK
- * Check which required secrets are set for the current branch
- */
-program
-  .command('secrets check')
+// SECRETS CHECK - Check which secrets are set
+secretsCommand
+  .command('check')
   .description('Check which required secrets are set for the current branch')
   .action(async () => {
     const config = getConfig();
