@@ -2132,9 +2132,9 @@ app.post('/api/secrets', (req, res) => {
       // 2. Encrypt the secret
       const encrypted_value = crypto.encrypt(value);
 
-      // 3. Save the secret
+      // 3. Save the secret (upsert: update if exists, insert if not)
       db.run(
-        'INSERT INTO secrets (agent_id, key, encrypted_value) VALUES (?, ?, ?)',
+        'INSERT OR REPLACE INTO secrets (agent_id, key, encrypted_value) VALUES (?, ?, ?)',
         [agent.id, key, encrypted_value],
         (err) => {
           if (err) throw new Error(err);
@@ -2146,6 +2146,70 @@ app.post('/api/secrets', (req, res) => {
   } catch (error) {
     console.error('Error setting secret:', error);
     res.status(500).send('Internal server error');
+  }
+});
+
+// Check which required secrets are set for an agent
+app.get('/api/secrets/check/:branch_hash', (req, res) => {
+  const { branch_hash } = req.params;
+
+  // Required secrets for agents to function
+  const REQUIRED_SECRETS = ['GROQ_API_KEY', 'AGENT_PRIVATE_KEY'];
+  const OPTIONAL_SECRETS = ['AI_PROMPT']; // Optional override
+
+  try {
+    // Find the agent
+    db.get('SELECT id, branch_name, repo_url FROM agents WHERE branch_hash = ?', [branch_hash], (err, agent) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (!agent) {
+        return res.status(404).json({ error: 'Agent not found' });
+      }
+
+      // Get all secrets for this agent
+      db.all('SELECT key FROM secrets WHERE agent_id = ?', [agent.id], (err, rows) => {
+        if (err) {
+          return res.status(500).json({ error: 'Database error' });
+        }
+
+        const setSecrets = new Set(rows.map(row => row.key));
+        const requiredStatus = REQUIRED_SECRETS.map(key => ({
+          key,
+          set: setSecrets.has(key),
+          required: true
+        }));
+        const optionalStatus = OPTIONAL_SECRETS.map(key => ({
+          key,
+          set: setSecrets.has(key),
+          required: false
+        }));
+
+        const allSet = requiredStatus.every(s => s.set);
+        const missingRequired = requiredStatus.filter(s => !s.set);
+
+        res.json({
+          agent: {
+            id: agent.id,
+            branch_name: agent.branch_name,
+            branch_hash
+          },
+          secrets: {
+            required: requiredStatus,
+            optional: optionalStatus,
+            all_required_set: allSet
+          },
+          status: allSet ? 'ready' : 'missing_secrets',
+          missing: missingRequired.map(s => s.key),
+          message: allSet 
+            ? 'All required secrets are set ✅' 
+            : `Missing required secrets: ${missingRequired.map(s => s.key).join(', ')}`
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Error checking secrets:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
