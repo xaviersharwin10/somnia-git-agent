@@ -1807,6 +1807,32 @@ app.post('/api/agents/branch/:branch_hash/restart', (req, res) => {
         });
       }
       
+      // Check if agent directory and file exist, clone/pull if needed
+      if (!fs.existsSync(agentPath) || !fs.existsSync(path.join(agentPath, 'agent.ts'))) {
+        console.log(`[RESTART] Agent directory or agent.ts missing for ${agent.branch_name}, cloning/pulling...`);
+        if (!fs.existsSync(agentPath)) {
+          shell.mkdir('-p', agentPath);
+          shell.cd(agentPath);
+          const cloneResult = shell.exec(`git clone ${agent.repo_url} . --branch ${agent.branch_name}`, { silent: true });
+          if (cloneResult.code !== 0) {
+            return res.status(500).json({ error: `Failed to clone agent directory: ${cloneResult.stderr}` });
+          }
+          if (fs.existsSync(path.join(agentPath, 'package.json'))) {
+            shell.exec('npm install', { silent: true });
+          }
+        } else {
+          shell.cd(agentPath);
+          shell.exec('git reset --hard HEAD', { silent: true });
+          shell.exec(`git fetch origin && git checkout ${agent.branch_name} && git pull origin ${agent.branch_name}`, { silent: true });
+          if (fs.existsSync(path.join(agentPath, 'package.json'))) {
+            shell.exec('npm install', { silent: true });
+          }
+        }
+        if (!fs.existsSync(path.join(agentPath, 'agent.ts'))) {
+          return res.status(500).json({ error: 'agent.ts not found after clone/pull' });
+        }
+      }
+      
       console.log(`[RESTART] Restarting agent: ${agent.branch_name} with REPO_URL=${agent.repo_url}`);
       await startOrReloadAgent(agent, agentPath, agent.branch_hash);
       res.json({ 
