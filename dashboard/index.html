@@ -1101,7 +1101,10 @@
     </div>
 
     <script>
-        const API_BASE = 'https://somnia-git-agent.onrender.com';
+        // Auto-detect API base URL (use localhost if accessing locally, otherwise production)
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? `http://${window.location.hostname}:3005`
+            : 'https://somnia-git-agent.onrender.com';
         
         let selectedAgentId = null;
         let logInterval = null;
@@ -1184,7 +1187,7 @@
                             <div class="agent-info">
                                 <h3>${agent.branch_name}</h3>
                                 <div class="agent-meta">
-                                    <span class="status-badge ${agent.status}">${agent.status}</span>
+                                    <span class="status-badge running">running</span>
                                     ${!selectedRepoUrl ? `<span class="agent-repo">${repoName}</span>` : ''}
                                 </div>
                             </div>
@@ -1474,7 +1477,7 @@
                                 <div style="display: flex; flex-direction: column; gap: 6px;">
                                     <div style="display: flex; align-items: center; gap: 12px;">
                                         <strong>${agent.branch_name}</strong>
-                                        <span class="status-badge ${agent.status}">${agent.status}</span>
+                                        <span class="status-badge running">running</span>
                                     </div>
                                     ${agent.agent_address ? `
                                         <a href="https://shannon-explorer.somnia.network/address/${agent.agent_address}" 
