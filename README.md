@@ -302,8 +302,8 @@ Team collaboration with role-based access. Custom deployment pipelines. White-la
 - **CLI Package**: [npmjs.com/package/git-somnia-agent](https://www.npmjs.com/package/git-somnia-agent)
 
 ### Hackathon Submission Materials
-- **Demo Video**: [Link to be added - 5-minute walkthrough] 🎥
-- **Pitch Deck**: [Link to be added - 5-10 slides] 📊
+- **Demo Video**: [https://www.youtube.com/watch?v=lytAbARW_YU&feature=youtu.be] 🎥
+- **Pitch Deck**: [https://www.canva.com/design/DAG30Ittau4/53sMIjq01isG8fPahhC3Wg/view?utm_content=DAG30Ittau4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h3ea8768de8#1] 📊
 
 ---
 
