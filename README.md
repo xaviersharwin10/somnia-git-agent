@@ -199,7 +199,7 @@ git somnia-agent compare main aggressive-strategy
 ## 🔗 Deployed Contracts on Somnia Testnet
 
 ### AgentFactory Contract
-**Address:** `[TO BE ADDED - Deploy AgentFactory.sol and add address here]`  
+**Address:** `0xef8B5b37f11d989dE81D4CcD4981cA085773f1b4`  
 **Explorer:** [View on Shannon Explorer](https://shannon-explorer.somnia.network/address/0xef8B5b37f11d989dE81D4CcD4981cA085773f1b4)  
 **Network:** Somnia Testnet (Chain ID: 50312)
 
